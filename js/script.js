@@ -1,43 +1,355 @@
-// form filter
+let time_list = [{"name":"12:00 AM","value":"24"},{"name":"1:00 AM","value":"1"},{"name":"2:00 AM","value":"2"},{"name":"3:00 AM","value":"3"},{"name":"4:00 AM","value":"4"},{"name":"5:00 AM","value":"5"},{"name":"6:00 AM","value":"6"},{"name":"7:00 AM","value":"7"},{"name":"8:00 AM","value":"8"},{"name":"9:00 AM","value":"9"},{"name":"10:00 AM","value":"10"},{"name":"11:00 AM","value":"11"},{"name":"12:00 PM","value":"12"},{"name":"1:00 PM","value":"13"},{"name":"2:00 PM","value":"14"},{"name":"3:00 PM","value":"15"},{"name":"4:00 PM","value":"16"},{"name":"5:00 PM","value":"17"},{"name":"6:00 PM","value":"18"},{"name":"7:00 PM","value":"19"},{"name":"8:00 PM","value":"20"},{"name":"9:00 PM","value":"21"},{"name":"10:00 PM","value":"22"},{"name":"11:00 PM","value":"23"}];
+
+var categories = ['55+', '45-54', '35-44', '25-34',
+    '18-24', 'Under 18'
+];
 let getSelectBranch = document.getElementById('branch0');
 let getSelectValue = document.getElementById('values0');
-// form DIV
-let branchDiv = document.getElementById('branchDiv0');
-let valueDiv = document.getElementById('valueDiv0');
-
 let formbusiness = document.getElementById('formbusiness');
-
+let formSelect = document.getElementById('formSelect');
 let blackdrop = document.getElementById('blackdrop');
 
-let branchList = {};
-let formSelect = document.getElementById('formSelect');
+let branch_list = {};
 let IDform = 1;
 let startdate, enddate
-
 let countFilter = [];
 let sum_question = [];
 let sum_question_table = [];
 let sum_question_graph = [];
-
-
-var all_count_v_color = [];
-var all_count_h_color = [];
-//P'kwan Summary Graph
+let all_count_v_color = [];
+let all_count_h_color = [];
 let sum_gender = [];
-// 
 let sum_gender_line = [];
-
 var start = moment().startOf('day');
 var end = moment().endOf('day');
 
-function cb(start, end) {
-    $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
 
-    startdate = start.unix() * 1000;
-    enddate = end.unix() * 1000 ;
-  
+var model = {
+
+    getDate: function (start, end) {
+        $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        startdate = start.unix() * 1000;
+        enddate = end.unix() * 1000;
+        return startdate, enddate;
+    },
+    onloadFetch: function () {
+        $.ajax({
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/list/form",
+            type: "GET",
+            dataType: 'json'
+        }).done(function (result) {
+            var form_list = result.data;
+            let key = [],
+                value = [];
+            for (let i in form_list) {
+                key.push(form_list[i].FormId);
+                value.push(form_list[i].FormName);
+            }
+            view.createFormList(key, value, formbusiness);
+        });
+
+        $.ajax({
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/list/tags",
+            type: "GET",
+            dataType: 'json',
+        }).done(function (data) {
+            branch_list = data.data;
+            let key = [];
+            for (let i in branch_list) {
+                key.push(i.charAt(0).toUpperCase() + i.slice(1));
+            }
+            view.createFormList(key, key, getSelectBranch);
+        });
+    },
+    fetchAPI : function(com , iden){
+        
+        if ((com && iden) == null){
+            com = '*';
+            iden = '*';
+        }
+        document.getElementById('blackdrop').style.display = 'block';
+        let param = {
+            "startdate": startdate,
+            "enddate": enddate,
+            "form": formbusiness.value,
+            "branch": getSelectValue.value
+        };
+        let param_with_filter = {
+            "startdate": startdate,
+            "enddate": enddate,
+            "form": formbusiness.value,
+            "branch":  getSelectValue.value,
+            "is_completed": com,
+            "is_identified": iden
+        }
+        let header = {
+            "Content-Type": 'application/json',
+            "Cache-Control": "no-cache"
+        }
+        let header_no_cache = {
+            "Content-Type": 'application/json'
+        }
+ 
+        // get total number of form
+        $.ajax({
+            crossDomain: true,
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/selector/filter",
+            headers: header_no_cache,
+            type: "POST",
+            processData: false,
+            data: JSON.stringify(param)
+        }).done(function (response) {
+            
+             countFilter = response.data;
+             view.countForm();
+        });
+        // Progress Score
+        $.ajax({
+            crossDomain: true,
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/score-graph",
+            headers: header,
+            type: "POST",
+            processData: false,
+            data: JSON.stringify(param_with_filter),
+            success: function (response) {
+                 if (response.data.length == 0) { 
+                    view.display('hide');
+                    document.getElementById('showForm').style.display = 'block';
+                    document.getElementById('blackdrop').style.display = 'none';
+                } else {
+                    view.display('show');
+                    createProgQuestion(response.data);
+                    document.getElementById('blackdrop').style.display = 'none';
+                }   
+            }
+        });
+        // Graph Emotion Gender
+        $.ajax({
+            crossDomain: true,
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question",
+            headers: header_no_cache,
+            type: "POST",
+            processData: false,
+            data: JSON.stringify(param_with_filter),
+            success: function (response) {
+                sum_question = response.data;
+            }
+        }).done(function () {
+            createSummaryQuestion();
+        });
+        // Table
+        $.ajax({
+            crossDomain: true,
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-table",
+            headers: header_no_cache,
+            type: "POST",
+            processData: false,
+            data: JSON.stringify(param_with_filter),
+            success: function (response) {
+                sum_question_table = response.data;
+            }
+        }).done(function () {
+            view.removeTable();
+        });
+
+         // LINE GRAPH Each question
+        $.ajax({
+            crossDomain: true,
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-graph",
+            headers: header_no_cache,
+            type: "POST",
+            processData: false,
+            data: JSON.stringify(param_with_filter),
+            success: function (response) {
+                sum_question_graph = response.data
+            }
+        }).done(function () {
+            createSummaryQuestionGraph();
+        });
+        //  P' Kwan API
+        //Summary -Question - Graph
+        $.ajax({
+            crossDomain: true,
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/age-graph",
+            headers: header,
+            type: "POST",
+            processData: false,
+            data: JSON.stringify(param_with_filter),
+            success: function (response) {
+                sum_gender = response.data
+            }
+        }).done(function () {
+            createGenderGraph();
+        });
+        // Line Graph 
+        $.ajax({
+            crossDomain: true,
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/gender-graph/",
+            headers: header ,
+            type: "POST",
+            processData: false,
+            data: JSON.stringify(param_with_filter),
+            success: function (response) {
+                sum_gender_line = response.data;
+            }
+        }).done(function () {
+            createGenderLineGrape();
+        });
+    }
+};
+
+var view = {
+    createFormList: function (key, value, formElem) { //create select dropdown
+        for (let i in key) {
+            let opts = document.createElement('option');
+            opts.value = key[i];
+            opts.name = value[i];
+            opts.innerHTML = value[i];
+            formElem.appendChild(opts);
+        }
+    },
+    countForm: function(){
+
+        for (let i = 1; i <= 5; i++) { 
+            //5 = number length of filterCheckbox type
+            let elemnumber = document.getElementById('checknumber' + i);
+            if (i === 1) {
+                elemnumber.innerText = countFilter[0].is_completed.true +
+                countFilter[0].is_completed.false;
+            } else if (i === 2) {
+                elemnumber.innerText = countFilter[0].is_completed.true;
+            } else if (i === 3) {
+                elemnumber.innerText = countFilter[0].is_completed.false;
+            } else if (i === 4) {
+                elemnumber.innerText = countFilter[0].is_identified.true;
+            } else {
+                elemnumber.innerText = countFilter[0].is_identified.false;
+            }
+        }
+    },
+    display : function(atb){
+        if (atb == 'show') {
+            document.getElementById('display-section').style.display = 'block';
+            document.getElementById('display-section-af-search').style.display = 'block';
+            document.getElementById('error-display').style.display = 'none';
+        } else if(atb === 'hide') {
+            document.getElementById('display-section').style.display = 'none';
+            document.getElementById('error-display').style.display = 'block';
+            document.getElementById('error-text').innerText = 'No Data';
+        }
+        else if(atb === 'clear'){
+            document.getElementById('display-section').style.display = 'none';
+            document.getElementById('error-display').style.display = 'none';
+            document.getElementById('display-section-af-search').style.display = 'none';
+        }
+    },  
+    graphEmotion : function(chart){
+        Highcharts.chart('container-2-q1', chart[0]);
+        Highcharts.chart('container-2-q2', chart[1]);
+        Highcharts.chart('container-2-q3', chart[2]);
+        Highcharts.chart('container-2-q4', chart[3]);
+        Highcharts.chart('container-2-q5', chart[4]);
+    },
+    setColor : function(pos,percent){
+        if (percent > 0 && percent <= 25) {
+            pos.style.backgroundColor = "#f1f8ff";
+        } else if (percent > 25 && percent <= 50) {
+            pos.style.backgroundColor = "#d7ecff";
+        } else if (percent > 50 && percent <= 75) {
+            pos.style.backgroundColor = "#bee0ff";
+        } else if (percent > 75 && percent <= 100) {
+            pos.style.backgroundColor = "#a4d4ff";
+        }
+    },
+    precreateTable : function(){
+        let score = [5, 4, 3, 2, 1];
+        let gender = ['m', 'f', 'u']; // m = male  f = femalle u = unknow s = summary
+        let allbody = document.querySelectorAll('.tbody-value');
+        for (let b = 0; b < allbody.length; b++) {
+            for (let i in time_list) {
+                let tr1 = document.createElement('tr');
+                tr1.innerHTML = `<td><b>` + time_list[i].name + `</b></td>`
+                for (x in gender) {
+                    for (j in score) {
+                        tr1.innerHTML +=
+                            `<td class="` + gender[x] + `-` + time_list[i].value + `-` + score[j] + `"></td>`;
+                    }
+                }
+                tr1.innerHTML += `<td class="s-` + time_list[i].value + ` sum-col"></td>`;
+                allbody[b].appendChild(tr1);
+            }
+        }
+        // create summary row (Last rows)
+        let allSummaryrow = document.querySelectorAll('.summary-row');
+        for (let i = 0; i < allSummaryrow.length; i++) {
+            let trSum = document.createElement('tr');
+            trSum.innerHTML = `<td><b>Total</b></td>`
+            for (x in gender) {
+                for (j in score) {
+
+                    trSum.innerHTML += `<td class ="` + gender[x] + `-t-` + score[j] + ` sum-row"></td>`;
+                }
+            }
+            trSum.innerHTML += `<td class="total-summary" id="sum-q` + (i + 1) + `" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>`;
+            allSummaryrow[i].appendChild(trSum);
+        }
+        createTable();
+    },
+    removeTable : function(){
+        let all_body_table = document.querySelectorAll('.tbody-value');
+        let all_row = document.querySelectorAll('.summary-row');
+        for (let i = 0; i < all_body_table.length; i++) {
+            while (all_body_table[i].hasChildNodes()) {
+                all_body_table[i].removeChild(all_body_table[i].lastChild);
+            }
+        }
+        for (let i = 0; i < all_row.length; i++) {
+            while (all_row[i].hasChildNodes()) {
+                all_row[i].removeChild(all_row[i].lastChild);
+            }
+        }
+        view.precreateTable();
+    }
 }
 
+var ctrl = {
+    getCheckbox : function(id){
+        if (document.querySelector('#inlineCheckbox1').checked === false && document.querySelector('#inlineCheckbox2').checked === false) {
+            if (id[id.length - 1] === '1') {
+                document.querySelector('#inlineCheckbox2').checked = true;
+            } else {
+                document.querySelector('#inlineCheckbox1').checked = true;
+            }
+        }
+        if (!document.querySelector('#inlineCheckbox3').checked && !document.querySelector('#inlineCheckbox4').checked) {
+            if (id[id.length - 1] === '3') {
+                document.querySelector('#inlineCheckbox4').checked = true;
+            } else {
+                document.querySelector('#inlineCheckbox3').checked = true;
+            }
+        }
+        if (document.querySelector('#inlineCheckbox1').checked) {
+            is_completed = true;
+        } else {
+            is_completed = false;
+        }
+        if (document.querySelector('#inlineCheckbox3').checked) {
+            is_identified = true;
+        } else {
+            is_identified = false;
+        }
+        if (document.querySelector('#inlineCheckbox1').checked && document.querySelector('#inlineCheckbox2').checked) {
+            is_completed = '*';
+        }
+        if (document.querySelector('#inlineCheckbox3').checked && document.querySelector('#inlineCheckbox4').checked) {
+            is_identified = '*';
+        }
+        model.fetchAPI(is_completed,is_identified);
+    }
+   
+}
+
+window.onload = model.onloadFetch();
 
 $('#reportrange').daterangepicker({
     startDate: start,
@@ -50,571 +362,45 @@ $('#reportrange').daterangepicker({
         'This Month': [moment().startOf('month'), moment().endOf('month')],
         'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
     }
-}, cb);
-cb(start, end);
+}, model.getDate);
+model.getDate(start, end);
 
+function getValueList(value, id) {
 
+    let getValueIdElem = document.getElementById('values' + id.slice(6));
 
-// Age categories
-var categories = ['55+', '45-54', '35-44', '25-34',
-    '18-24', 'Under 18'
-];
-window.onload = precreateTable();
-
-function precreateTable() {
-
-    let time = ['12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
-        '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'
-    ];
-
-    let idx = ['24', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
-        '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'
-    ];
-
-
-    let tbodyQ1 = document.getElementById('table-body-q1');
-    let tbodyQ2 = document.getElementById('table-body-q2');
-    let tbodyQ3 = document.getElementById('table-body-q3');
-    let tbodyQ4 = document.getElementById('table-body-q4');
-    let tbodyQ5 = document.getElementById('table-body-q5');
-    for (let i in time) {
-        let tr1 = document.createElement('tr');
-        let tr2 = document.createElement('tr');
-        let tr3 = document.createElement('tr');
-        let tr4 = document.createElement('tr');
-        let tr5 = document.createElement('tr');
-        //
-        // m = male
-        // f = femalle
-        // u = unknow
-        // s = summary
-        //
-        // numberID = s.substring(0, s.indexOf('?'));
-        tr1.innerHTML = `
-            <td><b> ` + time[i] + `</b></td>
-            <td class="m-` + idx[i] + `-5"></td>  <td class="m-` + idx[i] + `-4"></td>  <td class="m-` + idx[i] + `-3"></td>  <td class="m-` + idx[i] + `-2"></td>  <td class="m-` + idx[i] + `-1"></td>
-
-            <td class="f-` + idx[i] + `-5"></td>  <td class="f-` + idx[i] + `-4"></td>  <td class="f-` + idx[i] + `-3"></td>  <td class="f-` + idx[i] + `-2"></td>  <td class="f-` + idx[i] + `-1"></td>
-
-            <td class="u-` + idx[i] + `-5"></td>  <td class="u-` + idx[i] + `-4"></td>  <td class="u-` + idx[i] + `-3"></td>  <td class="u-` + idx[i] + `-2"></td>  <td class="u-` + idx[i] + `-1"></td>
-            <td class="s-` + idx[i] + ` sum-row"></td>`;
-
-
-        tr2.innerHTML = `
-            <td><b> ` + time[i] + `</b></td>
-            <td class="m-` + idx[i] + `-5"></td>  <td class="m-` + idx[i] + `-4"></td>  <td class="m-` + idx[i] + `-3"></td>  <td class="m-` + idx[i] + `-2"></td>  <td class="m-` + idx[i] + `-1"></td>
-
-            <td class="f-` + idx[i] + `-5"></td>  <td class="f-` + idx[i] + `-4"></td>  <td class="f-` + idx[i] + `-3"></td>  <td class="f-` + idx[i] + `-2"></td>  <td class="f-` + idx[i] + `-1"></td>
-
-            <td class="u-` + idx[i] + `-5"></td>  <td class="u-` + idx[i] + `-4"></td>  <td class="u-` + idx[i] + `-3"></td>  <td class="u-` + idx[i] + `-2"></td>  <td class="u-` + idx[i] + `-1"></td>
-            <td class="s-` + idx[i] + ` sum-row"></td>`;
-
-        tr3.innerHTML = `
-            <td><b> ` + time[i] + `</b></td>
-            <td class="m-` + idx[i] + `-5"></td>  <td class="m-` + idx[i] + `-4"></td>  <td class="m-` + idx[i] + `-3"></td>  <td class="m-` + idx[i] + `-2"></td>  <td class="m-` + idx[i] + `-1"></td>
-
-            <td class="f-` + idx[i] + `-5"></td>  <td class="f-` + idx[i] + `-4"></td>  <td class="f-` + idx[i] + `-3"></td>  <td class="f-` + idx[i] + `-2"></td>  <td class="f-` + idx[i] + `-1"></td>
-
-            <td class="u-` + idx[i] + `-5"></td>  <td class="u-` + idx[i] + `-4"></td>  <td class="u-` + idx[i] + `-3"></td>  <td class="u-` + idx[i] + `-2"></td>  <td class="u-` + idx[i] + `-1"></td>
-            <td class="s-` + idx[i] + ` sum-row"></td>`;
-
-        tr4.innerHTML = `
-            <td><b> ` + time[i] + `</b></td>
-            <td class="m-` + idx[i] + `-5"></td>  <td class="m-` + idx[i] + `-4"></td>  <td class="m-` + idx[i] + `-3"></td>  <td class="m-` + idx[i] + `-2"></td>  <td class="m-` + idx[i] + `-1"></td>
-
-            <td class="f-` + idx[i] + `-5"></td>  <td class="f-` + idx[i] + `-4"></td>  <td class="f-` + idx[i] + `-3"></td>  <td class="f-` + idx[i] + `-2"></td>  <td class="f-` + idx[i] + `-1"></td>
-
-            <td class="u-` + idx[i] + `-5"></td>  <td class="u-` + idx[i] + `-4"></td>  <td class="u-` + idx[i] + `-3"></td>  <td class="u-` + idx[i] + `-2"></td>  <td class="u-` + idx[i] + `-1"></td>
-            <td class="s-` + idx[i] + ` sum-row"></td>`;
-
-        tr5.innerHTML = `
-            <td><b> ` + time[i] + `</b></td>
-            <td class="m-` + idx[i] + `-5"></td>  <td class="m-` + idx[i] + `-4"></td>  <td class="m-` + idx[i] + `-3"></td>  <td class="m-` + idx[i] + `-2"></td>  <td class="m-` + idx[i] + `-1"></td>
-
-            <td class="f-` + idx[i] + `-5"></td>  <td class="f-` + idx[i] + `-4"></td>  <td class="f-` + idx[i] + `-3"></td>  <td class="f-` + idx[i] + `-2"></td>  <td class="f-` + idx[i] + `-1"></td>
-
-            <td class="u-` + idx[i] + `-5"></td>  <td class="u-` + idx[i] + `-4"></td>  <td class="u-` + idx[i] + `-3"></td>  <td class="u-` + idx[i] + `-2"></td>  <td class="u-` + idx[i] + `-1"></td>
-            <td class="s-` + idx[i] + ` sum-row" ></td>`;
-
-        tbodyQ1.appendChild(tr1);
-        tbodyQ2.appendChild(tr2);
-        tbodyQ3.appendChild(tr3);
-        tbodyQ4.appendChild(tr4);
-        tbodyQ5.appendChild(tr5);
-
+    for (let i in branch_list) {
+        if (i.toLowerCase() === value.toLowerCase()) {
+            getValueIdElem.innerHTML = '';
+            let key = branch_list[i];
+            let createDefultOpt = `<option selected disabled value=''>-- Select --</option>`;
+            getValueIdElem.insertAdjacentHTML('beforeend', createDefultOpt);
+            view.createFormList(key, key, getValueIdElem);
+        }
     }
-
 }
 
-$('html').ready(function () {
-    $.ajax({
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/list/tags",
-        type: "GET",
-        dataType: 'json',
-        success: function (result) {
-            //  result.data;
-        }
-    }).done(function (data) {
-        branchList = data.data;
-        createBranchList();
-    });
-});
+function generateColorSummary(vcol, hrow) {
 
-$('html').ready(function () {
-
-    $.ajax({
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/list/form",
-        type: "GET",
-        dataType: 'json',
-        success: function (result) {
-            var formList = result.data;
-            let key = [],
-                value = [];
-            for (let i in formList) {
-
-                key.push(formList[i].FormId);
-                value.push(formList[i].FormName);
+    let eachRow = document.querySelectorAll('.sum-row');
+    let eachCol = document.querySelectorAll('.sum-col');
+    let totalelem = document.querySelectorAll('.total-summary');
+    for (let z = 0; z < totalelem.length; z++) { /// length = 5 all table
+        for (let i in eachCol) { // summary of column
+            let valueOfEachCol = Number(eachCol[i].innerHTML);
+            let percent = Math.floor((valueOfEachCol / vcol[z]) * 100);
+            if (typeof eachCol[i] !== 'undefined') {
+                view.setColor(eachCol[i], percent);
             }
-            createFormList(key, value, formbusiness);
         }
-    }).done(function () {
-        // blackdrop.style.display = 'none';
-    });
-});
-
-function generateColorSummary() {
-
-    
-    let tr_total_arr = document.querySelectorAll('.border-disable');
-    let td_arr = [];
-
-    let sum_total_arr = document.querySelectorAll('.sum-row');
-    let sum_arr = [sum_total_arr];
-
-    let totalelem=document.querySelectorAll('.total-summary');
-    
-    for (let i in sum_total_arr) {
-        for(let z=0; z< totalelem.length ; z++ ){ /// length = 5
-            for(let j in all_count_v_color){
-                let numberSum = Number(sum_total_arr[i].innerHTML);
-                let percent = Math.floor((numberSum / all_count_v_color[j]) * 100);
-                if(typeof sum_total_arr[i] !== 'undefined'){
-                    if (percent > 0 && percent <= 25) {
-                        sum_total_arr[i].style.backgroundColor  = "#f1f8ff";
-                    } else if (percent > 25 && percent <= 50) {
-                        sum_total_arr[i].style.backgroundColor  = "#d7ecff";
-                    } else if (percent > 50 && percent <= 75) {
-                        sum_total_arr[i].style.backgroundColor  = "#bee0ff";
-                    } else if (percent > 75 && percent <= 100) {
-                        sum_total_arr[i].style.backgroundColor  = "#a4d4ff";
-                    } 
-                }
+        for (let i in eachRow) { // summary of row
+            let valueOfEachRow = Number(eachRow[i].innerHTML);
+            let percent = Math.floor((valueOfEachRow / hrow[z]) * 100);
+            if (typeof eachRow[i] !== 'undefined') {
+                view.setColor(eachRow[i], percent);
             }
         }
     }
-
-    for (let i = 0; i < tr_total_arr.length; i++) {
-
-        td_arr.push(tr_total_arr[i].getElementsByTagName('td'));
-
-    }
-
-    for (let i = 0; i < td_arr.length; i++) {
-       
-        for (var j in td_arr[i]) {
-            for(let z=0; z< totalelem.length ; z++ ){
-                for(let h in all_count_h_color){
-                    // console.log(td_arr[i][j])  /// position of graph
-                    let total = Number(td_arr[i][j].innerText);
-                    let percent = Math.floor((total / all_count_h_color[h]) * 100); 
-
-                    if (percent > 0 && percent <= 25) {
-                        td_arr[i][j].style.backgroundColor  = "#f1f8ff";
-                    } else if (percent > 25 && percent <= 50) {
-                        td_arr[i][j].style.backgroundColor  = "#d7ecff";
-                    } else if (percent > 50 && percent <= 75) {
-                        td_arr[i][j].style.backgroundColor  = "#bee0ff";
-                    } else if (percent > 75 && percent <= 100) {
-                        td_arr[i][j].style.backgroundColor  = "#a4d4ff";
-                    } 
-                }
-            }
-        }
-    }
-}
-
-// get number IN filter Below Date picker
-function getCountFilter() {
-
-    $.ajax({
-        crossDomain: true,
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/rpt-filter-complete-identify-form-dev",
-        headers: {
-            "Content-Type": 'application/json',
-            "Cache-Control": "no-cache"
-        },
-        type: "POST",
-        processData: false,
-        data: JSON.stringify({
-            "startdate": startdate,
-            "enddate": enddate,
-            "form": formbusiness.value,
-            "branch": getSelectValue.value
-        }),
-        success: function (response) {
-
-            countFilter = response.data;
-            // console.log(countFilter);
-        }
-    }).done(function () {
-
-        for (let i = 1; i <= 5; i++) {
-            let elemnumber = document.getElementById('checknumber' + i);
-            if (i === 1) {
-                elemnumber.innerText = countFilter[0].is_identified.true +
-                    countFilter[0].is_identified.false;
-
-            } else if (i === 2) {
-                elemnumber.innerText = countFilter[0].is_completed.true;
-            } else if (i === 3) {
-                elemnumber.innerText = countFilter[0].is_completed.false;
-            } else if (i === 4) {
-                elemnumber.innerText = countFilter[0].is_identified.true;
-            } else {
-                elemnumber.innerText = countFilter[0].is_identified.false;
-            }
-        }
-    });
-}
-
-function precreatesum() {
-    let sum_body1 = document.getElementById('summary-q1');
-    let sum_body2 = document.getElementById('summary-q2');
-    let sum_body3 = document.getElementById('summary-q3');
-    let sum_body4 = document.getElementById('summary-q4');
-    let sum_body5 = document.getElementById('summary-q5');
-    let q1 = `<td><b>Total</b></td>
-            <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-            <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-            <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-            <td class="total-summary" id="sum-q1" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>`;
-    let q2 = `<td><b>Total</b></td>
-            <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-            <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-            <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-            <td class="total-summary" id="sum-q2" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>`;
-    let q3 = `<td><b>Total</b></td>
-            <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-            <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-            <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-            <td class="total-summary" id="sum-q3" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>`;
-    let q4 = `<td><b>Total</b></td>
-            <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-            <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-            <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-            <td class="total-summary" id="sum-q4" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>`;
-
-    let q5 = `<td><b>Total</b></td>
-            <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-            <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-            <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-            <td class="total-summary" id="sum-q5" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>`;
-    sum_body1.insertAdjacentHTML('beforeend', q1);
-    sum_body2.insertAdjacentHTML('beforeend', q2);
-    sum_body3.insertAdjacentHTML('beforeend', q3);
-    sum_body4.insertAdjacentHTML('beforeend', q4);
-    sum_body5.insertAdjacentHTML('beforeend', q5);
-}
-
-// Get question Progress BAR
-function getQuestion(id) {
-
-    document.getElementById('blackdrop').style.display = 'block';
-    let tbodyQ1 = document.getElementById('table-body-q1');
-    let tbodyQ2 = document.getElementById('table-body-q2');
-    let tbodyQ3 = document.getElementById('table-body-q3');
-    let tbodyQ4 = document.getElementById('table-body-q4');
-    let tbodyQ5 = document.getElementById('table-body-q5');
-
-    while (tbodyQ1.hasChildNodes()) {
-        tbodyQ1.removeChild(tbodyQ1.lastChild);
-    }
-    while (tbodyQ2.hasChildNodes()) {
-        tbodyQ2.removeChild(tbodyQ2.lastChild);
-    }
-    while (tbodyQ3.hasChildNodes()) {
-        tbodyQ3.removeChild(tbodyQ3.lastChild);
-    }
-    while (tbodyQ4.hasChildNodes()) {
-        tbodyQ4.removeChild(tbodyQ4.lastChild);
-    }
-    while (tbodyQ5.hasChildNodes()) {
-        tbodyQ5.removeChild(tbodyQ5.lastChild);
-    }
-
-    let sum_body1 = document.getElementById('summary-q1');
-    let sum_body2 = document.getElementById('summary-q2');
-    let sum_body3 = document.getElementById('summary-q3');
-    let sum_body4 = document.getElementById('summary-q4');
-    let sum_body5 = document.getElementById('summary-q5');
-    while (sum_body1.hasChildNodes()) {
-        sum_body1.removeChild(sum_body1.lastChild);
-    }
-    while (sum_body2.hasChildNodes()) {
-        sum_body2.removeChild(sum_body2.lastChild);
-    }
-    while (sum_body3.hasChildNodes()) {
-        sum_body3.removeChild(sum_body3.lastChild);
-    }
-    while (sum_body4.hasChildNodes()) {
-        sum_body4.removeChild(sum_body4.lastChild);
-    }
-    while (sum_body5.hasChildNodes()) {
-        sum_body5.removeChild(sum_body5.lastChild);
-    }
-
-
-
-    precreatesum();
-    precreateTable();
-
-    let isCompleted;
-    let isIdentified;
-    if (document.querySelector('#inlineCheckbox1').checked === false && document.querySelector('#inlineCheckbox2').checked === false) {
-
-        if (id[id.length - 1] === '1') {
-            document.querySelector('#inlineCheckbox2').checked = true;
-        } else {
-            document.querySelector('#inlineCheckbox1').checked = true;
-        }
-    }
-    if (!document.querySelector('#inlineCheckbox3').checked && !document.querySelector('#inlineCheckbox4').checked) {
-        if (id[id.length - 1] === '3') {
-            document.querySelector('#inlineCheckbox4').checked = true;
-        } else {
-            document.querySelector('#inlineCheckbox3').checked = true;
-        }
-    }
-
-    if (document.querySelector('#inlineCheckbox1').checked) {
-        isCompleted = true;
-    } else {
-        isCompleted = false;
-    }
-    if (document.querySelector('#inlineCheckbox3').checked) {
-        isIdentified = true;
-    } else {
-        isIdentified = false;
-    }
-    if (document.querySelector('#inlineCheckbox1').checked && document.querySelector('#inlineCheckbox2').checked) {
-        isCompleted = '*';
-    }
-    if (document.querySelector('#inlineCheckbox3').checked && document.querySelector('#inlineCheckbox4').checked) {
-        isIdentified = '*';
-    }
-
-    let selected = document.getElementById('values0').value;
-
-    $.ajax({
-        crossDomain: true,
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/rpt-count-question-score-dev/",
-        headers: {
-            "Content-Type": 'application/json',
-            "Cache-Control": "no-cache"
-        },
-        type: "POST",
-        processData: false,
-        data: JSON.stringify({
-            "startdate": startdate,
-            "enddate": enddate,
-            "form": formbusiness.value,
-            "branch": selected,
-            "is_completed": isCompleted,
-            "is_identified": isIdentified
-        }),
-        success: function (response) {
-
-            createProgQuestion(response.data);
-
-        }
-    }).done(function () {
-        getCountFilter();
-    });
-}
-
-function getQuestionData(id) {
-
-    // Summary - Question 
-    let isCompleted;
-    let isIdentified;
-
-    if (document.querySelector('#inlineCheckbox1').checked === false && document.querySelector('#inlineCheckbox2').checked === false) {
-
-        if (id[id.length - 1] === '1') {
-            document.querySelector('#inlineCheckbox2').checked = true;
-        } else {
-            document.querySelector('#inlineCheckbox1').checked = true;
-        }
-    }
-    if (!document.querySelector('#inlineCheckbox3').checked && !document.querySelector('#inlineCheckbox4').checked) {
-        if (id[id.length - 1] === '3') {
-            document.querySelector('#inlineCheckbox4').checked = true;
-        } else {
-            document.querySelector('#inlineCheckbox3').checked = true;
-        }
-    }
-
-    if (document.querySelector('#inlineCheckbox1').checked) {
-        isCompleted = true;
-    } else {
-        isCompleted = false;
-    }
-    if (document.querySelector('#inlineCheckbox3').checked) {
-        isIdentified = true;
-    } else {
-        isIdentified = false;
-    }
-    if (document.querySelector('#inlineCheckbox1').checked && document.querySelector('#inlineCheckbox2').checked) {
-        isCompleted = '*';
-    }
-    if (document.querySelector('#inlineCheckbox3').checked && document.querySelector('#inlineCheckbox4').checked) {
-        isIdentified = '*';
-    }
-
-    $.ajax({
-        crossDomain: true,
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/summary/question",
-        headers: {
-            "Content-Type": 'application/json'
-            // "Cache-Control": "no-cache"
-        },
-        type: "POST",
-        processData: false,
-        data: JSON.stringify({
-            "startdate": startdate,
-            "enddate": enddate,
-            "form": formbusiness.value,
-            "branch": getSelectValue.value,
-            "is_completed": isCompleted,
-            "is_identified": isIdentified
-        }),
-        success: function (response) {
-            // console.log('graph image x');
-            // console.log(response);
-            sum_question = response.data;
-            // console.log(sum_question);
-        }
-    }).done(function () {
-
-        createSummaryQuestion();
-
-    });
-
-    //Summary - Question -  Table
-    $.ajax({
-        crossDomain: true,
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/summary/question-table",
-        headers: {
-            "Content-Type": 'application/json'
-            // "Cache-Control": "no-cache"
-        },
-        type: "POST",
-        processData: false,
-        data: JSON.stringify({
-            "startdate": startdate,
-            "enddate": enddate,
-            "form": formbusiness.value,
-            "branch": getSelectValue.value,
-            "is_completed": isCompleted,
-            "is_identified": isIdentified
-        }),
-        success: function (response) {
-            sum_question_table = response.data;
-        }
-    }).done(function () {
-        createTable();
-    });
-
-    // LINE GRAPH QUESTION
-    $.ajax({
-        crossDomain: true,
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/summary/question-graph",
-        headers: {
-            "Content-Type": 'application/json'
-            // "Cache-Control": "no-cache"
-        },
-        type: "POST",
-        processData: false,
-        data: JSON.stringify({
-            "startdate": startdate,
-            "enddate": enddate,
-            "form": formbusiness.value,
-            "branch": getSelectValue.value,
-            "is_completed": isCompleted,
-            "is_identified": isIdentified
-        }),
-        success: function (response) {
-            // console.log('graph p vit');
-            // console.log(response);
-            sum_question_graph = response.data
-        }
-    }).done(function () {
-        createSummaryQuestionGraph();
-    });
-
-    //  P' Kwan API
-    //Summary -Question - Graph
-    $.ajax({
-        crossDomain: true,
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/rpt-gender-score-summary-dev",
-        headers: {
-            "Content-Type": 'application/json'
-            // "Cache-Control": "no-cache"
-        },
-        type: "POST",
-        processData: false,
-        data: JSON.stringify({
-            "startdate": startdate,
-            "enddate": enddate,
-            "form": formbusiness.value,
-            "branch": getSelectValue.value,
-            "is_completed": isCompleted,
-            "is_identified": isIdentified
-        }),
-        success: function (response) {
-            // console.log('P kwan gender');
-            // console.log(response);
-            sum_gender = response.data
-        }
-    }).done(function () {
-        createGenderGraph();
-    });
-
-    // Line Graph 
-    $.ajax({
-        crossDomain: true,
-        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/rpt-summary-gender-score-graph-dev",
-        headers: {
-            "Content-Type": 'application/json'
-        },
-        type: "POST",
-        processData: false,
-        data: JSON.stringify({
-            "startdate": startdate,
-            "enddate": enddate,
-            "form": formbusiness.value,
-            "branch": getSelectValue.value,
-            "is_completed": isCompleted,
-            "is_identified": isIdentified
-        }),
-        success: function (response) {
-            // console.log('P kwan Line Graph');
-            // console.log(response);
-            sum_gender_line = response.data;
-        }
-    }).done(function () {
-        createGenderLineGrape();
-    });
 }
 
 function createGenderLineGrape() {
@@ -629,7 +415,7 @@ function createGenderLineGrape() {
         for (let j in sum_gender_line[i].interval_date) { //j = 'male' , 'female','all'
 
             //var timestamp = moment(sum_gender_line[i].interval_date[j].datetime).utcOffset("+07:00").format('YYYY-MM-DD HH:mm');
-   var timestamp = new Date(sum_gender_line[i].interval_date[j].datetime).getTime();
+            var timestamp = new Date(sum_gender_line[i].interval_date[j].datetime).getTime();
             if (sum_gender_line[i].key === 'male') { //sum_gender_line[i][j][z]) == {count , datetime}
                 all_men_arr.push([
                     timestamp,
@@ -673,7 +459,7 @@ function createGenderLineGrape() {
             labels: {
                 enabled: true
             },
-   type: 'datetime'
+            type: 'datetime'
 
         },
         legend: {
@@ -688,7 +474,7 @@ function createGenderLineGrape() {
             // series: {
             //     pointStart: 0
             // }
-   
+
         },
 
         series: [{
@@ -787,8 +573,8 @@ function createGenderGraph() {
                 // set percentage label 
                 let total_gender;
                 let img;
-              
-           
+
+
                 if (name === 'Male') {
                     img = '<i class="fa fa-male icon-male" aria-hidden="true"></i>';
                     total_gender = total_m / total * 100;
@@ -796,9 +582,9 @@ function createGenderGraph() {
                     img = '<i class="fa fa-female icon-female" aria-hidden="true"></i>';
                     total_gender = total_f / total * 100;
                 }
-                 if(isNaN(total_gender)){
-                     return img + name + '-';
-                 }
+                if (isNaN(total_gender)) {
+                    return img + name + '-';
+                }
                 return img + '  ' + name + ' (' + total_gender.toFixed(2) + '%)';
             }
         },
@@ -858,7 +644,6 @@ function createGenderGraph() {
 
 function createSummaryQuestion() {
 
-    // console.log(sum_question);
     let data_question = []
     let data_question_sum = [];
     for (i in sum_question) { // i = q1,q2,q3,q4,q5
@@ -900,11 +685,9 @@ function createSummaryQuestion() {
         data_question_sum.push(data_question.reverse());
         data_question = [];
     }
-
     // Collect All Data
     let chart_Question = [];
     for (let i = 0; i < data_question_sum.length; i++) {
-
         chart_Question.push({
             chart: {
                 type: 'column'
@@ -928,7 +711,6 @@ function createSummaryQuestion() {
                     }
                 }
             },
-            
             xAxis: {
                 categories: ['Upset', 'Dislike', 'Normal', 'Like', 'Love'],
                 labels: {
@@ -971,13 +753,7 @@ function createSummaryQuestion() {
             }]
         });
     }
-
-    Highcharts.chart('container-2-q1', chart_Question[0]);
-    Highcharts.chart('container-2-q2', chart_Question[1]);
-    Highcharts.chart('container-2-q3', chart_Question[2]);
-    Highcharts.chart('container-2-q4', chart_Question[3]);
-    Highcharts.chart('container-2-q5', chart_Question[4]);
-
+    view.graphEmotion(chart_Question);
 }
 // P' vit DID
 function createSummaryQuestionGraph() {
@@ -1019,11 +795,11 @@ function createSummaryQuestionGraph() {
                         }
                     }
                 }
-                if (sum_question_graph["q" + (i + 1)]["N/A"] !== undefined) {
-                    if (sum_question_graph["q" + (i + 1)]["N/A"]["" + k] !== undefined) {
-                        if (sum_question_graph["q" + (i + 1)]["N/A"]["" + k]["" + j] !== undefined) {
-                            na_data_temp += sum_question_graph["q" + (i + 1)]["N/A"]["" + k]["" + j] * k;
-                            na_data_sum += sum_question_graph["q" + (i + 1)]["N/A"]["" + k]["" + j] * 5;
+                if (sum_question_graph["q" + (i + 1)]["Unidentified"] !== undefined) {
+                    if (sum_question_graph["q" + (i + 1)]["Unidentified"]["" + k] !== undefined) {
+                        if (sum_question_graph["q" + (i + 1)]["Unidentified"]["" + k]["" + j] !== undefined) {
+                            na_data_temp += sum_question_graph["q" + (i + 1)]["Unidentified"]["" + k]["" + j] * k;
+                            na_data_sum += sum_question_graph["q" + (i + 1)]["Unidentified"]["" + k]["" + j] * 5;
                         }
                     }
                 }
@@ -1084,7 +860,7 @@ function createSummaryQuestionGraph() {
             },
             tooltip: {
                 formatter: function () {
-                    return '<p><b>'+this.series.name + ' : ' + this.y + '</b></p>';
+                    return '<p><b>' + this.series.name + ' : ' + this.y + '</b></p>';
                 }
             },
 
@@ -1128,298 +904,150 @@ function createSummaryQuestionGraph() {
 
 }
 
-    function createTable() {
+function createTable() {
 
-        let allTable = document.querySelectorAll('.tbody-value');
+    let allTable = document.querySelectorAll('.tbody-value');
+    let sum_per_row = 1;
+    let sum_total = 0;
+    let all_count_v_color = [];
+    let all_count_h_color = [];
 
-        let sum_per_row = 1;
-        let sum_total = 0;
+    for (let i in sum_question_table) { // i = q1,q2,q3
+        let count_v_color = 0;
+        let count_h_color = 0;
+        let sum_total_ele = document.getElementById('sum-' + i); //last column last row
+        let sum_total_row_ele = document.getElementById('summary-' + i); //all sum row 
+        let bodyIdx = document.getElementById('table-body-' + i); // get tbody
+        for (let j in sum_question_table[i]) { // j = male,female,n/a
+            //  console.log(sum_question_table[i][j]); // == inside m,f,n
+            for (let z in sum_question_table[i][j]) { /// z  === type of score
+                // console.log(sum_question_table[i][j][z]);  /// sum_question_table[i][j][z] == Object  of time
+                for (let time in sum_question_table[i][j][z]) {
+                    // console.log(sum_question_table[i][j][z][time]); /// value
+                    time = Number(time);
+                    time = Math.abs(time);
+                    if (j === 'Male') {
 
-        all_count_v_color = [];
-        all_count_h_color = [];
-        
-        
-        for (let i in sum_question_table) { // i = q1,q2,q3
-            let count_v_color = 0;
-            let count_h_color = 0;
-            let sum_total_ele = document.getElementById('sum-' + i);
-            let sum_total_col_ele = document.getElementById('summary-' + i);
-            let bodyIdx = document.getElementById('table-body-' + i); // get tbody
-            for (let j in sum_question_table[i]) { // j = male,female,n/a
-                //  console.log(sum_question_table[i][j]); // == inside m,f,n
-                for (let z in sum_question_table[i][j]) { /// z  === type of score
-                    // console.log(sum_question_table[i][j][z]);  /// sum_question_table[i][j][z] == Object  of time
-                    for (let time in sum_question_table[i][j][z]) {
-                        // console.log(sum_question_table[i][j][z][time]); /// value
-                       
-                        time =  Number(time);
-                        time = Math.abs(time);
+                        bodyIdx.querySelector('.m' + '-' + time + '-' + z).innerText = sum_question_table[i][j][z][time]; // set value in postion
 
-                        if (j === 'Male') {
-                            bodyIdx.querySelector('.m' + '-' + time + '-' + z).innerText = sum_question_table[i][j][z][time];
+                        bodyIdx.querySelector('.s' + '-' + time).innerText = Number(bodyIdx.querySelector('.s' + '-' + time).innerText) + sum_question_table[i][j][z][time]; //this line for summary row
 
-                            bodyIdx.querySelector('.s' + '-' + time).innerText = Number(bodyIdx.querySelector('.s' + '-' + time).innerText) + sum_question_table[i][j][z][time]; //this line for summary row
+                        sum_total_row_ele.querySelector('.m-t-' + z).innerText = Number(sum_total_row_ele.querySelector('.m-t-' + z).innerText) + sum_question_table[i][j][z][time]; //this line for summary column
 
-                            sum_total_col_ele.querySelector('.m-t-' + z).innerText = Number(sum_total_col_ele.querySelector('.m-t-' + z).innerText) + sum_question_table[i][j][z][time]; //this line for summary column
+                        sum_total += sum_question_table[i][j][z][time];
 
-                            sum_total += sum_question_table[i][j][z][time];
+                    } else if (j === 'Female') {
 
+                        bodyIdx.querySelector('.f' + '-' + time + '-' + z).innerText = sum_question_table[i][j][z][time];
+                        bodyIdx.querySelector('.s' + '-' + time).innerText = Number(bodyIdx.querySelector('.s' + '-' + time).innerText) + sum_question_table[i][j][z][time]; //this line for summary row
 
-                        } else if (j === 'Female') {
+                        sum_total_row_ele.querySelector('.f-t-' + z).innerText = Number(sum_total_row_ele.querySelector('.f-t-' + z).innerText) + sum_question_table[i][j][z][time]; //this line for summary column
 
-                            bodyIdx.querySelector('.f' + '-' + time + '-' + z).innerText = sum_question_table[i][j][z][time];
-                            bodyIdx.querySelector('.s' + '-' + time).innerText = Number(bodyIdx.querySelector('.s' + '-' + time).innerText) + sum_question_table[i][j][z][time]; //this line for summary row
+                        sum_total += sum_question_table[i][j][z][time];
+                    } else if (j === "Unidentified") {
 
-                            sum_total_col_ele.querySelector('.f-t-' + z).innerText = Number(sum_total_col_ele.querySelector('.f-t-' + z).innerText) + sum_question_table[i][j][z][time]; //this line for summary column
+                        bodyIdx.querySelector('.u' + '-' + time + '-' + z).innerText = sum_question_table[i][j][z][time];
+                        bodyIdx.querySelector('.s' + '-' + time).innerText = Number(bodyIdx.querySelector('.s' + '-' + time).innerText) + sum_question_table[i][j][z][time]; //this line for summary row
 
-                            sum_total += sum_question_table[i][j][z][time];
-                        } else if (j === "N/A") {
+                        sum_total_row_ele.querySelector('.u-t-' + z).innerText = Number(sum_total_row_ele.querySelector('.u-t-' + z).innerText) + sum_question_table[i][j][z][time]; //this line for summary column
+                        sum_total += sum_question_table[i][j][z][time];
 
-                            bodyIdx.querySelector('.u' + '-' + time + '-' + z).innerText = sum_question_table[i][j][z][time];
-                            bodyIdx.querySelector('.s' + '-' + time).innerText = Number(bodyIdx.querySelector('.s' + '-' + time).innerText) + sum_question_table[i][j][z][time]; //this line for summary row
-                            
-                            sum_total_col_ele.querySelector('.u-t-' + z).innerText = Number(sum_total_col_ele.querySelector('.u-t-' + z).innerText) + sum_question_table[i][j][z][time]; //this line for summary column
-
-
-                            sum_total += sum_question_table[i][j][z][time];
-                            
-                        }
-                        // bodyIdx.querySelector('.s'+'-'+time).innerText = sum_per_row+1;
-                        let max_h = Math.max(Number(sum_total_col_ele.querySelector('.u-t-' + z).innerText), Number(sum_total_col_ele.querySelector('.f-t-' + z).innerText), Number(sum_total_col_ele.querySelector('.m-t-' + z).innerText));
-                     
-                        if(Number(count_h_color) <= Number(max_h)){
-                            count_h_color = max_h;
-                            
-                        }
-                     
-                        if(Number(count_v_color) <= Number(bodyIdx.querySelector('.s' + '-' + time).innerText)){
-                            
-                            count_v_color = bodyIdx.querySelector('.s' + '-' + time).innerText;
-                        }
-                        
                     }
-                    sum_per_row = 0;
+                    // bodyIdx.querySelector('.s'+'-'+time).innerText = sum_per_row+1;
+                    let max_h = Math.max(Number(sum_total_row_ele.querySelector('.u-t-' + z).innerText), Number(sum_total_row_ele.querySelector('.f-t-' + z).innerText), Number(sum_total_row_ele.querySelector('.m-t-' + z).innerText));
+
+                    if (Number(count_h_color) <= Number(max_h)) {
+                        count_h_color = max_h;
+                    }
+                    if (Number(count_v_color) <= Number(bodyIdx.querySelector('.s' + '-' + time).innerText)) {
+                        count_v_color = bodyIdx.querySelector('.s' + '-' + time).innerText;
+                    }
+
                 }
+                sum_per_row = 0;
             }
-
-            sum_total_ele.innerText = sum_total;
-            sum_total = 0;
-            //push array to geneerate color
-            all_count_v_color.push(count_v_color);
-            all_count_h_color.push(count_h_color);
         }
-      
-        generateColorSummary();
-        document.getElementById('blackdrop').style.display = 'none';
+        sum_total_ele.innerText = sum_total;
+        sum_total = 0;
+        //push array to geneerate color
+        all_count_v_color.push(count_v_color);
+        all_count_h_color.push(count_h_color);
     }
+    generateColorSummary(all_count_v_color, all_count_h_color);
+}
 
-function createProgQuestion(example) {
+function createProgQuestion(data) {
 
     let prog_elem = document.getElementById('progress-question');
-    let sum_prog_elem = document.getElementById('summary-progress');
-
     prog_elem.innerHTML = '';
+    let sum_prog_elem = document.getElementById('summary-progress');
     sum_prog_elem.innerHTML = '';
-    for (let i in example) {
-
-        let count = example[i].q1.count * 5 + example[i].q2.count * 5 + example[i].q3.count * 5 + example[i].q4.count * 5 + example[i].q5.count * 5;
-
-
-        let sum_score = example[i].q1.sum_score + example[i].q2.sum_score + example[i].q3.sum_score + example[i].q4.sum_score + example[i].q5.sum_score;
-
-        let percent_summary = Math.floor((sum_score / count) * 100);
-        
-        if (!isNaN(Math.floor((example[i].q1.sum_score / (example[i].q1.count * 5)) * 100))) { //this for show if have data in period
-            display('show');
+    let count = 0;
+    let sum_score = 0;
+    let percent_summary = 0;
+    for (let i in data) {
+        count = count += data[i].que_count * 5;
+        sum_score = sum_score += data[i].que_sum_score;
+        percent_summary = Math.floor((sum_score / count) * 100);
+        if (data[i].que_sum_score == 0) {
+            var percent_value = " - ";
         } else {
-            display('hide');
-            document.getElementById('showForm').style.display = 'block';
+            var percent_value = Math.floor((data[i].que_sum_score / (data[i].que_count * 5)) * 100)
         }
-        if(isNaN(Math.floor((example[i].q1.sum_score / (example[i].q1.count * 5)) * 100))){
-            var value1 = '-';
-        }else{
-            var value1 = Math.floor((example[i].q1.sum_score / (example[i].q1.count * 5)) * 100);
-        }
-        if(isNaN(Math.floor((example[i].q2.sum_score / (example[i].q2.count * 5)) * 100))){
-            var value2 = '-';
-        }else{
-            var value2 = Math.floor((example[i].q2.sum_score / (example[i].q2.count * 5)) * 100);
-        }
-        if(isNaN(Math.floor((example[i].q3.sum_score / (example[i].q3.count * 5)) * 100))){
-            var value3 = '-';
-        }else{
-            var value3 = Math.floor((example[i].q3.sum_score / (example[i].q3.count * 5)) * 100);
-        }
-        if(isNaN(Math.floor((example[i].q4.sum_score / (example[i].q4.count * 5)) * 100))){
-            var value4 = '-';
-        }else{
-            var value4 = Math.floor((example[i].q4.sum_score / (example[i].q4.count * 5)) * 100);
-        }
-        if(isNaN(Math.floor((example[i].q5.sum_score / (example[i].q5.count * 5)) * 100))){
-            var value5 = '-';
-        }else{
-            var value5 = Math.floor((example[i].q5.sum_score / (example[i].q5.count * 5)) * 100);
-        }
-
-        let createProgressElement =
+        let progress_element =
             `<div class="form-group">
-                <label class="label-title"> 1.ความพึงพอใจในการต้อนรับ </label>
-                <div class="progress col-lg-10" style="padding:0">
-                    <div class="progress-bar color-intensity-2" role="progressbar" 
-                    aria-valuenow="` + value1 + `"
-                                    aria-valuemin="0" aria-valuemax="100" 
-                    style="width:` + value1 + `%">
-
-                        <span class="progress-value">` + value1 + `%</span>
-
+                    <label class="label-title"> ` + data[i].que_id + `. ` + data[i].que_name + ` </label>
+                    <div class="progress col-lg-10" style="padding:0">
+                        <div class="progress-bar color-intensity-2" role="progressbar" 
+                        aria-valuenow="` + percent_value + `"
+                                        aria-valuemin="0" aria-valuemax="100" 
+                        style="width:` + percent_value + `%">
+                            <span class="progress-value">` + percent_value + `%</span>
+                        </div>
                     </div>
-                </div>
-                <span class="col-lg-2 ">` + example[i].q1.sum_score + '/' + example[i].q1.count * 5 + `</span>
-            </div>
-            <div class="form-group">
-                <label class="label-title">2.ความพึงพอใจในการเอาใจใส่</label>
-                <div class="progress col-lg-10" style="padding:0">
-                    <div class="progress-bar color-intensity-2" role="progressbar"
-                    aria-valuenow="` + value2 + `"
-                                    aria-valuemin="0" aria-valuemax="100" 
-                    style="width:` + value2 + `%">
-                        
-                        <span class="progress-value">` + value2 + `%</span>
-                    </div>
-                </div>
-                <span class="col-lg-2 ">` + example[i].q2.sum_score + '/' + example[i].q2.count * 5 + `</span>
-            </div>
-            <div class="form-group">
-                <label class="label-title">3.ความพึงพอใจในระยะเวลาการทำรายการ</label>
-                <div class="progress col-lg-10" style="padding:0">
-                    <div class="progress-bar color-intensity-2" role="progressbar" 
-                        aria-valuenow="` + value3 + `"
-                                    aria-valuemin="0" aria-valuemax="100" style="width:` + value3 + `%">
-                        <span class="progress-value">` + value3 + `%</span>
-                    </div>
-                </div>
-                <span class="col-lg-2 ">` + example[i].q3.sum_score + '/' + example[i].q3.count * 5 + `</span>
-            </div>
-            <div class="form-group">
-                <label class="label-title">4.ความพึงพอใจในการให้คำแนะนำ</label>
-                <div class="progress col-lg-10" style="padding:0">
-                    <div class="progress-bar color-intensity-2" role="progressbar" aria-valuenow="` + value4 + `"
-                                    aria-valuemin="0" aria-valuemax="100" style="width:` + value4 + `%">
-                        <span class="progress-value">` +value4 + `%</span>
-                    </div>
-                </div>
-                <span class="col-lg-2 ">` + example[i].q4.sum_score + '/' + example[i].q4.count * 5 + `</span>
-            </div>
-            <div class="form-group">
-                <label class="label-title">5.ความพึงพอใจในความถูกต้องการทำรายการ</label>
-                <div class="progress col-lg-10" style="padding:0">
-                    <div class="progress-bar color-intensity-2" role="progressbar" aria-valuenow="` + value5 + `"
-                                    aria-valuemin="0" aria-valuemax="100" style="width:` + value5 + `%">
-                        <span class="progress-value">` + value5 + `%</span>
-                    </div>
-                </div>
-                <span class="col-lg-2 ">` + example[i].q5.sum_score + '/' + example[i].q5.count * 5 + `</span>
-            </div>`
-
-        prog_elem.insertAdjacentHTML('beforeend', createProgressElement);
-
-        let createSumProgElem =
-            `<div class="progress margin-top-1 col-lg-10" style="padding:0">
+                    <span class="col-lg-2 ">` + data[i].que_sum_score + '/' + data[i].que_count * 5 + `</span>
+                </div>`
+        // 5 is max score 
+        prog_elem.insertAdjacentHTML('beforeend', progress_element);
+    }
+    let createSumProgElem =
+        `<div class="progress margin-top-1 col-lg-10" style="padding:0">
                 <div class="progress-bar color-intensity-3" role="progressbar" aria-valuenow="` + percent_summary + `"
                                 aria-valuemin="0" aria-valuemax="100" style="width:` + percent_summary + `%">
                      <span class="progress-value"><b>` + percent_summary + `%</b></span>
                 </div>
             </div>
             <span class="col-lg-2 progress-number">` + sum_score + '/' + count + `</span>`
-
-        sum_prog_elem.insertAdjacentHTML('beforeend', createSumProgElem);
-    }
+    sum_prog_elem.insertAdjacentHTML('beforeend', createSumProgElem);
 }
-
-function createBranchList() {
-
-    let key = [];
-    for (let i in branchList) {
-        key.push(i.charAt(0).toUpperCase() + i.slice(1));
-    }
-    createFormList(key, key, getSelectBranch);
-};
-
-function getValueList(value, id) {
-
-    let getValueIdElem = document.getElementById('values' + id.slice(6));
-
-    for (let i in branchList) {
-        if (i.toLowerCase() === value.toLowerCase()) {
-            getValueIdElem.innerHTML = '';
-            let key = branchList[i];
-            let createDefultOpt = `<option selected disabled value=''>-- Select --</option>`;
-            getValueIdElem.insertAdjacentHTML('beforeend', createDefultOpt);
-            createFormList(key, key, getValueIdElem);
-        }
-    }
-}
-
-function createFormList(key, value, select_id) {
-
-    for (let i in key) {
-        let opts = document.createElement('option');
-        opts.value = key[i];
-        opts.name = value[i];
-        opts.innerHTML = value[i];
-        select_id.appendChild(opts);
-    }
-}
-
 
 function addFilter() {
 
-    let FormDIV = document.getElementById('filterForm');
-    let cln = FormDIV.cloneNode(true); // copy div filterform
-    cln.id = "form" + IDform; //set id in filterform
-    let select_elem = cln.getElementsByTagName('select'); //get select
-    let div_elem = cln.getElementsByTagName('div'); // get form  div
-    select_elem[select_elem.length - 1].innerHTML = '';
-
+    let FormDIV = document.getElementById('filterForm');// clone div filter dropdown
+    let cln = FormDIV.cloneNode(true);//set id in filterform
+    cln.id = "form" + IDform;
+    let selectElem = cln.getElementsByTagName('select');
+    selectElem[selectElem.length - 1].innerHTML = '';
+    let div_elem = cln.getElementsByTagName('div');
     let createDefultOpt = `<option selected disabled value=''>-- Select --</option>`;
-    select_elem[select_elem.length - 1].insertAdjacentHTML('beforeend', createDefultOpt);
-
-
+    selectElem[selectElem.length - 1].insertAdjacentHTML('beforeend', createDefultOpt);
     cln.getElementsByTagName('label')[0].innerHTML = '' // clear text of label
 
-    for (let i = 0; i < select_elem.length; i++) {
-
-        select_elem[i].id = select_elem[i].id + IDform; /// add id of <select> <= value , branch
+    for (let i = 0; i < selectElem.length; i++) {
+        selectElem[i].id = selectElem[i].id + IDform; /// add id of <select> <= value , branch
         div_elem[i].id = div_elem[i].id + IDform; /// add id of <select> <= divvalue , divbranch
 
     }
 
     let lastDiv = cln.getElementsByTagName('div');
     lastDiv = lastDiv[lastDiv.length - 1];
-
     let icon_remove = `<i class="fa fa-minus-circle minus-btn"
-                                        id="addBtn"
-                                        onclick = removeForm("form"+` + IDform + `);
-                                        aria-hidden="true"></i>`;
+                        id="addBtn" onclick = removeForm("form"+` + IDform + `);
+                        aria-hidden="true"></i>`;
 
     lastDiv.insertAdjacentHTML('beforeend', icon_remove);
     formSelect.appendChild(cln);
     IDform += 1;
-
-}
-
-function display(att) {
-
-    if (att == 'show') {
-        document.getElementById('display-section').style.display = 'block';
-        document.getElementById('display-section-af-search').style.display = 'block';
-        document.getElementById('error-display').style.display = 'none';
-    } else {
-        document.getElementById('display-section').style.display = 'none';
-        document.getElementById('error-display').style.display = 'block';
-        document.getElementById('error-text').innerText = 'No Data';
-      
-    }
 }
 
 function checkState() {
@@ -1434,7 +1062,6 @@ function checkState() {
 
 function removeForm(id) {
     document.getElementById(id).remove();
-
 }
 
 function scrollToTop() {

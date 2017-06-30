@@ -17,7 +17,7 @@
     <nav class="navbar navbar-default nav-style">
         <div class="container-fluid">
             <div class="navbar-header">
-                <h1 class="title">Report</h1>
+                <h1 class="title" onClick="location.reload(true);" style="cursor:pointer">Report</h1>
             </div>
         </div>
     </nav>
@@ -25,8 +25,7 @@
     <div class="container">
         <div class="row">
             <div class="col-xs-6">
-                <div id="reportrange" class="pull-right"
-                    style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                <div id="reportrange" class="pull-right date-picker">
                     <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
                     <span></span> <b class="caret"></b>
                 </div>
@@ -69,15 +68,12 @@
                              <div class="col-md-10 filterBtnPanel" style="float:right;padding-left:0;">
                                 <hr>
                                 <button type="button" id ="filterBtn" class="btn btn-primary btn-circle color-intensity-3" style="outline:none;" onclick = "addFilter()" type="button" ><i class="fa fa-plus" aria-hidden="true"></i></button><label class="text-addfilter" for="filterBtn">Add Filter</label>
-                                <!--<button class="button button1 color-intensity-3" onclick = "addFilter()" type="button" > 
-                                    <i class="fa fa-plus" aria-hidden="true"></i>
-                                    <span>Add Filter</span>
-                                </button>-->
+                                
                             </div>
                     </form>
                     <div class="panel-footer" style="text-align:right;">
-                        <button class="btn btn-success" id ="buttonShow" onclick="getQuestion();getQuestionData();" disabled>Show</button>
-                        <button class="btn btn-warning" onclick="display('clear')">Clear</button>
+                        <button class="btn btn-success" id ="buttonShow" onclick="model.fetchAPI()" disabled>Show</button>
+                        <button class="btn btn-warning" onclick="view.display('clear')">Clear</button>
                     </div>
                 </div>
             </div>
@@ -94,19 +90,26 @@
             <h3 class="text-center" id = "showForm"><strong>Total Form : <b id="checknumber1"></b> form(s)</strong></h3>
             <div class="col-md-12 margin-top-1 text-center">
                 <div class="checkbox checkbox-inline">
-                    <input type="checkbox" id="inlineCheckbox1" value="complete" checked onchange="getQuestion(id);getQuestionData(id);">
+                    <input type="checkbox" id="inlineCheckbox1" value="complete" checked 
+                            onchange="ctrl.getCheckbox(id)">
+
                     <label for="inlineCheckbox1"> Complete Form (<span id="checknumber2" class="label-title"></span>) </label>
                 </div>
                 <div class="checkbox checkbox-success checkbox-inline">
-                    <input type="checkbox" id="inlineCheckbox2" value="incomplete" checked onchange="getQuestion(id);getQuestionData(id);">
+                    <input type="checkbox" id="inlineCheckbox2" value="incomplete" checked 
+                            onchange="ctrl.getCheckbox(id)">
                     <label for="inlineCheckbox2"> Un-Complete Form (<span id="checknumber3" class="label-title"></span>) </label>
                 </div>
                 <div class="checkbox checkbox-inline">
-                    <input type="checkbox" id="inlineCheckbox3" value="identify" checked onchange="getQuestion(id);getQuestionData(id);">
+                    <input type="checkbox" id="inlineCheckbox3" value="identify" checked 
+                            onchange="ctrl.getCheckbox(id)">
+
                     <label for="inlineCheckbox3"> Identified Person (<span id="checknumber4" class="label-title"></span>) </label>
                 </div>
                 <div class="checkbox checkbox-inline">
-                    <input type="checkbox" id="inlineCheckbox4" value="unidentid" checked onchange="getQuestion(id);getQuestionData(id);">
+                    <input type="checkbox" id="inlineCheckbox4" value="unidentid" checked 
+                            onchange="ctrl.getCheckbox(id)">
+
                     <label for="inlineCheckbox4"> Un-Identified Person (<span id="checknumber5" class="label-title"></span>)</label>
                 </div>
             </div>
@@ -128,17 +131,16 @@
                 <div id="container2" style="min-width: 310px; max-width: 800px; height: 200px; margin: 0 auto"></div>
             </div>
 
-
             <!--Progress-->
             <div class="col-md-4">
-                <div class="panel panel-default" style="height: 600px;overflow: auto;">
+                <div class="panel panel-default" style="height: 600px;">
                     <div class="panel-heading" style="background:white;"> 
                         <h3 style="color:#4BAEB6">
                              <span style="font-size:15px;" class="glyphicon glyphicon-blackboard" aria-hidden="true"></span style="font-size:15px;">
                              Score
                         </h3> 
                     </div>
-                    <div class="panel-body">
+                    <div class="panel-body" style="height: calc(100% - 47px);overflow-y: auto;">
                         <h4 style="font-size:25px;"><b><u>คะแนนรวม</u></b></h4>
                         <div class="form-group" id ="summary-progress">
                             
@@ -192,17 +194,8 @@
                         <tbody id = "table-body-q1" class = "tbody-value"> 
 
                         </tbody>
-                        <tbody> 
-                            <tr class="border-disable" id = "summary-q1" >
-                                <td><b>Total</b></td>
-                                <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-
-                                <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-
-                                <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-
-                                <td class="total-summary" id="sum-q1" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>
-                            </tr>
+                        <tbody  class="border-disable summary-row" id = "summary-q1"> 
+                            
                         </tbody>
                     </table>
                 </div>
@@ -246,14 +239,8 @@
                         <tbody id = "table-body-q2" class = "tbody-value"> 
 
                         </tbody>
-                        <tbody> 
-                            <tr class="border-disable" id = "summary-q2">
-                                <td><b>Total</b></td>
-                                <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-                                <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-                                <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-                                <td class="total-summary" id="sum-q2" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>
-                            </tr>
+                        <tbody class="border-disable summary-row" id = "summary-q2"> 
+                         
                         </tbody>
                     </table>
                 </div>
@@ -269,7 +256,6 @@
                 <div class="col-md-4">
                     <div id="container-2-q3"></div>
                 </div>
-
                 <!--taboe-->
                 <div class="col-md-12 table-style">
                     <table style="width:100%" class="margin-top-5">
@@ -297,15 +283,8 @@
                         <tbody id = "table-body-q3" class = "tbody-value"> 
 
                         </tbody>
-                        <tbody> 
-                            <tr class="border-disable " id = "summary-q3">
-                                <td><b>Total</b></td>
-                                <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-                                <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-                                <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-                                <td class="total-summary" id="sum-q3"
-                                style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>
-                            </tr>
+                        <tbody class="border-disable summary-row" id = "summary-q3"> 
+                            
                         </tbody>
                     </table>
                 </div>
@@ -349,17 +328,8 @@
                         <tbody id = "table-body-q4" class = "tbody-value"> 
 
                         </tbody>
-                        <tbody> 
-                            <tr class="border-disable" id = "summary-q4" >
-                                <td><b>Total</b></td>
-                                <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-
-                                <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-
-                                <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-
-                                <td class="total-summary" id="sum-q4" style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>
-                            </tr>
+                        <tbody class="border-disable summary-row" id = "summary-q4" > 
+                          
                         </tbody>
                     </table>
                 </div>
@@ -402,15 +372,8 @@
                         </thead>
                         <tbody id = "table-body-q5" class = "tbody-value"> 
                         </tbody>
-                        <tbody> 
-                            <tr class="border-disable" id = "summary-q5">
-                                <td><b>Total</b></td>
-                                <td class ="m-t-5"></td><td class ="m-t-4"></td><td class ="m-t-3"></td><td class ="m-t-2"></td><td class ="m-t-1"></td>
-                                <td class ="f-t-5"></td><td class ="f-t-4"></td><td class ="f-t-3"></td><td class ="f-t-2"></td><td class ="f-t-1"></td>
-                                <td class ="u-t-5"></td><td class ="u-t-4"></td><td class ="u-t-3"></td><td class ="u-t-2"></td><td class ="u-t-1"></td>
-                                <td class="total-summary" id="sum-q5"
-                                style="background:white;  border-bottom: double 2px #777777;font-size:20px;">0</td>
-                            </tr>
+                        <tbody class="border-disable summary-row" id = "summary-q5"> 
+                           
                         </tbody>
                     </table>
                 </div>
@@ -439,5 +402,6 @@
 <script type="text/javascript" src="js/daterangepicker.js"></script>
 <script type="text/javascript" src="js/highcharts.js"></script>
 <script type="text/javascript" src="js/script.js"></script>
+
 
 </html>
