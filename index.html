@@ -2,7 +2,8 @@
 <html>
 
 <head>
-    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8">    
     <title>Report Survey</title>
     <!-- Bootstrap -->
     <link href="css/bootstrap.css" rel="stylesheet">
@@ -10,6 +11,9 @@
     <link href="css/font-awesome.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
     <link href="css/highcharts.css" rel="stylesheet">
+    <style>
+        body { display:none; } 
+    </style>
 </head>
 
 <body>
@@ -19,8 +23,17 @@
             <div class="navbar-header">
                 <h1 class="title" onClick="location.reload(true);" style="cursor:pointer">Report</h1>
             </div>
+            <div class="dropdown drop-div">
+                <i class="fa fa-sort-desc dropbtn" aria-hidden="true"  onclick="dropdownLogOut()" ></i>
+                <i class="fa fa-play fa-rotate-270 dropdown-content" aria-hidden="true" style="position: absolute;
+    bottom: -21px;display:none;color:#f9f9f9" id="myDropdownTri"></i> 
+                <div id="myDropdown" class="dropdown-content dropdown-display">
+                    <p onclick="logout()">Log Out</p>
+                </div>
+            </div>
         </div>
     </nav>
+<div id="content">
 
     <div class="container">
         <div class="row">
@@ -29,114 +42,114 @@
                     <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
                     <span></span> <b class="caret"></b>
                 </div>
-                
+
             </div>
             <div class="col-xs-6">
-                <div class="panel panel-default" >
+                <div class="panel panel-default">
                     <div class="panel-heading">
                         <h3 style="font-weight:bold;color:#4BAEB6">
                             <span class="glyphicon glyphicon-pencil"></span> Select Form
                         </h3>
                     </div>
                     <form class="form-horizontal panel-body">
-                        <fieldset id ="formSelect">
+                        <fieldset id="formSelect">
                             <div class="form-group" style="margin-bottom:1em;">
                                 <label for="emailFrom" class="col-lg-2 control-label">Form : </label>
                                 <div class="col-lg-10">
-                                    <select class="form-control" id="formbusiness" name="formbusiness" onchange="checkState()">
+                                    <select class="form-control" id="formbusiness" name="formbusiness" onchange="checkState()" autocomplete="off">
                                         <option selected disabled value = ''>-- Select Form --</option>
                                     </select>
-                                   
+
                                 </div>
                             </div>
 
-                            <div class="form-group" id ="filterForm">
+                            <div class="form-group" id="filterForm">
                                 <label for="branch" class="col-lg-2 control-label">Filter : </label>
                                 <div class="col-lg-4" id="branchDiv0">
-                                    <select class="form-control" id="branch0" name="branch" onchange="getValueList(value , id);checkState()">
+                                    <select class="form-control" id="branch0" name="branch" onchange="getValueList(value , id);checkState()" autocomplete="off">
                                         <option selected disabled value='' >-- Select --</option>
                                     </select>
                                 </div>
                                 <div class="col-lg-6" id="valueDiv0">
-                                    <select class="form-control" id="values0" onchange="checkState()">
+                                    <select class="form-control" id="values0" onchange="checkState()" autocomplete="off">
                                         <option selected disabled value=''>-- Select --</option>
                                       
                                     </select>
                                 </div>
                             </div>
-                            </fieldset>
-                             <div class="col-md-10 filterBtnPanel" style="float:right;padding-left:0;">
-                                <hr>
-                                <button type="button" id ="filterBtn" class="btn btn-primary btn-circle color-intensity-3" style="outline:none;" onclick = "addFilter()" type="button" ><i class="fa fa-plus" aria-hidden="true"></i></button><label class="text-addfilter" for="filterBtn">Add Filter</label>
-                                
-                            </div>
+                        </fieldset>
+                        <div class="col-md-10 filterBtnPanel" style="float:right;padding-left:0;">
+                            <hr>
+                            <button type="button" id="filterBtn" class="btn btn-primary btn-circle color-intensity-3" style="outline:none;" onclick="addFilter()"
+                                type="button"><i class="fa fa-plus" aria-hidden="true"></i></button>
+                            <label
+                                class="text-addfilter" for="filterBtn">Add Filter</label>
+
+                        </div>
                     </form>
                     <div class="panel-footer" style="text-align:right;">
-                        <button class="btn btn-success" id ="buttonShow" onclick="model.fetchAPI()" disabled>Show</button>
+                        <button class="btn btn-success" id="buttonShow" onclick="model.fetchAPI()" disabled>Show</button>
                         <button class="btn btn-warning" onclick="view.display('clear')">Clear</button>
                     </div>
                 </div>
             </div>
         </div>
-        
-        
+
+
     </div>
 
     <!-- TOTAL PANEL-->
-    <div class="container margin-top-2" id ="display-section-af-search" style= "display:none;">
+    <div class="container margin-top-2" id="display-section-af-search" style="display:none;">
         <!--Checkbox-->
         <hr>
         <div class="row margin-top-2">
-            <h3 class="text-center" id = "showForm"><strong>Total Form : <b id="checknumber1"></b> form(s)</strong></h3>
+            <h3 class="text-center" id="showForm"><strong>Total Form : <b id="checknumber1"></b> form(s)</strong></h3>
             <div class="col-md-12 margin-top-1 text-center">
                 <div class="checkbox checkbox-inline">
-                    <input type="checkbox" id="inlineCheckbox1" value="complete" checked 
-                            onchange="ctrl.getCheckbox(id)">
+                    <input type="checkbox" id="inlineCheckbox1" value="complete" checked onchange="ctrl.getCheckbox(id)">
 
                     <label for="inlineCheckbox1"> Complete Form (<span id="checknumber2" class="label-title"></span>) </label>
                 </div>
                 <div class="checkbox checkbox-success checkbox-inline">
-                    <input type="checkbox" id="inlineCheckbox2" value="incomplete" checked 
-                            onchange="ctrl.getCheckbox(id)">
+                    <input type="checkbox" id="inlineCheckbox2" value="incomplete" checked onchange="ctrl.getCheckbox(id)">
                     <label for="inlineCheckbox2"> Un-Complete Form (<span id="checknumber3" class="label-title"></span>) </label>
                 </div>
                 <div class="checkbox checkbox-inline">
-                    <input type="checkbox" id="inlineCheckbox3" value="identify" checked 
-                            onchange="ctrl.getCheckbox(id)">
+                    <input type="checkbox" id="inlineCheckbox3" value="identify" checked onchange="ctrl.getCheckbox(id)">
 
                     <label for="inlineCheckbox3"> Identified Person (<span id="checknumber4" class="label-title"></span>) </label>
                 </div>
                 <div class="checkbox checkbox-inline">
-                    <input type="checkbox" id="inlineCheckbox4" value="unidentid" checked 
-                            onchange="ctrl.getCheckbox(id)">
+                    <input type="checkbox" id="inlineCheckbox4" value="unidentid" checked onchange="ctrl.getCheckbox(id)">
 
                     <label for="inlineCheckbox4"> Un-Identified Person (<span id="checknumber5" class="label-title"></span>)</label>
                 </div>
             </div>
-         </div>
-    </div>
-    <h2 id = "error-display" class="error"><hr style="margin-bottom:2em;"><b id ="error-text">No Data Select </b></h2>
-<div id = "display-section" style="display:none;">
-    <div class="container margin-top-1">     
-        <div class="row">    
-            <div style="float:right">
-                <img src="img/pdf.png" width="30px" />
-                <img src="img/excel.png" width="35px"/>
-            </div>
         </div>
-
-        <div class="row margin-top-2">
-            <div class="col-md-8 panel panel-default">
-                <div id="scoresummary"></div>
-                <div id="container2" style="min-width: 310px; max-width: 800px; height: 200px; margin: 0 auto"></div>
+    </div>
+    <h2 id="error-display" class="error">
+        <hr style="margin-bottom:2em;"><b id="error-text">No Data Select </b></h2>
+    <div id="display-section" style="display:none;">
+        <div class="container margin-top-1">
+            <div class="row">
+                <div style="float:right">
+                    <img src="img/pdf.png" width="30px" id="cmd"/>
+                    <img src="img/excel.png" width="35px" />
+                </div>
             </div>
 
-            <!--Progress-->
-            <div class="col-md-4">
-                <div class="panel panel-default" style="height: 600px;">
-                    <div class="panel-heading" style="background:white;"> 
-                        <h3 style="color:#4BAEB6">
-                             <span style="font-size:15px;" class="glyphicon glyphicon-blackboard" aria-hidden="true"></span style="font-size:15px;">
+            <div class="row margin-top-2">
+                <div class="col-md-8 panel panel-default">
+                    <div id="scoresummary"></div>
+                    <div id="container2" style="min-width: 310px; max-width: 800px; height: 200px; margin: 0 auto"></div>
+                </div>
+
+                <!--Progress-->
+                <div class="col-md-4">
+                    <div class="panel panel-default" style="height: 600px;">
+                        <div class="panel-heading" style="background:white;">
+                            <h3 style="color:#4BAEB6">
+                                <span style="font-size:15px;" class="glyphicon glyphicon-blackboard" aria-hidden="true"></span style="font-size:15px;">
                              Score
                         </h3> 
                     </div>
@@ -156,252 +169,52 @@
     
     <!-- DISPLAY  -->
     <!---  "-fluid" if want full width of container -->
-    <div class="container margin-top-1" style="padding-right:30px">
-        <div class="row">
-            <div class="panel panel-default panel-body">
-                <h3> 1.ความพึงพอใจในการต้อนรับ</h3>
-                <div class="col-md-8">
-                    <div id="container-1-q1"></div>
-                </div>
-                <div class="col-md-4">
-                    <div id="container-2-q1"></div>
-                </div>
-
-                <!--taboe-->
-                <div class="col-md-12 table-style" >
-                    <table style="width:100%" class="margin-top-5">
-                        <thead>
-                            <tr>
-                                 <td rowspan="2"></td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Male </b> 
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Female</b>  
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Other</b>  
-                                 </td>
-                                 <td rowspan="2"></td>
-                            </tr>
-                            <tr>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                 
-                            </tr>
-                        </thead>
-                        <tbody id = "table-body-q1" class = "tbody-value"> 
-
-                        </tbody>
-                        <tbody  class="border-disable summary-row" id = "summary-q1"> 
-                            
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="panel panel-default panel-body">
-                <h3> 2.ความพึงพอใจในการเอาใจใส่</h3>
-                <div class="col-md-8">
-                    <div id="container-1-q2"></div>
-                </div>
-                <div class="col-md-4">
-                    <div id="container-2-q2"></div>
-                </div>
-
-                <!--taboe-->
-                <div class="col-md-12 table-style">
-                    <table style="width:100%" class="margin-top-5">
-                        <thead>
-                            <tr>
-                                 <td rowspan="2"></td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Male </b> 
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Female</b>  
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Other</b>  
-                                 </td>
-                                 <td rowspan="2"></td>
-                            </tr>
-                            <tr>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                 
-                            </tr>
-                        </thead>
-                        <tbody id = "table-body-q2" class = "tbody-value"> 
-
-                        </tbody>
-                        <tbody class="border-disable summary-row" id = "summary-q2"> 
-                         
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="panel panel-default panel-body">
-                <h3> 3.ความพึงพอใจในระยะเวลาการทำรายการ</h3>
-                <div class="col-md-8">
-                    <div id="container-1-q3"></div>
-                </div>
-                <div class="col-md-4">
-                    <div id="container-2-q3"></div>
-                </div>
-                <!--taboe-->
-                <div class="col-md-12 table-style">
-                    <table style="width:100%" class="margin-top-5">
-                        <thead>
-                            <tr>
-                                 <td rowspan="2"></td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Male </b> 
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Female</b>  
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Other</b>  
-                                 </td>
-                                 <td rowspan="2"></td>
-                            </tr>
-                            <tr>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                 
-                            </tr>
-                        </thead>
-                        <tbody id = "table-body-q3" class = "tbody-value"> 
-
-                        </tbody>
-                        <tbody class="border-disable summary-row" id = "summary-q3"> 
-                            
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="panel panel-default panel-body">
-                <h3> 4.ความพึงพอใจในการให้คำแนะนำ</h3>
-                <div class="col-md-8">
-                    <div id="container-1-q4"></div>
-                </div>
-                <div class="col-md-4">
-                    <div id="container-2-q4"></div>
-                </div>
-
-                <!--taboe-->
-                <div class="col-md-12 table-style">
-                    <table style="width:100%" class="margin-top-5">
-                        <thead>
-                            <tr>
-                                 <td rowspan="2"></td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Male </b> 
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Female</b>  
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Other</b>  
-                                 </td>
-                                 <td rowspan="2"></td>
-                            </tr>
-                            <tr>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                 
-                            </tr>
-                        </thead>
-                        <tbody id = "table-body-q4" class = "tbody-value"> 
-
-                        </tbody>
-                        <tbody class="border-disable summary-row" id = "summary-q4" > 
-                          
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-         <div class="row">
-            <div class="panel panel-default panel-body">
-                <h3> 5.ความพึงพอใจในความถูกต้องการทำรายการ</h3>
-                <div class="col-md-8">
-                    <div id="container-1-q5"></div>
-                </div>
-                <div class="col-md-4">
-                    <div id="container-2-q5"></div>
-                </div>
-
-                <!--taboe-->
-                <div class="col-md-12 table-style">
-                    <table style="width:100%" class="margin-top-5">
-                        <thead>
-                            <tr>
-                                 <td rowspan="2"></td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Male </b> 
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Female</b>  
-                                 </td>
-                                 <td colspan="5" class="border-right">
-                                     <b>Other</b>  
-                                 </td>
-                                 <td rowspan="2"></td>
-                            </tr>
-                            <tr>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
-                                 
-                            </tr>
-                        </thead>
-                        <tbody id = "table-body-q5" class = "tbody-value"> 
-                        </tbody>
-                        <tbody class="border-disable summary-row" id = "summary-q5"> 
-                           
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    <div class="container margin-top-1" style="padding-right:30px" id ="question-all">
+        
     </div>
 </div>
+</div>
+<div id="editor"></div>
     <div id="blackdrop">
         <i class="fa fa-spinner fa-spin fa-3x fa-fw loading-animate"></i>
         <span class="sr-only">Loading...</span>
-    </div>
-        <!--Scroll to Top-->
-        <button class="scroll btn btn-warning btn-circle btn-lg" onclick="scrollToTop()" style="outline:none">
+                        </div>
+                        <!--Scroll to Top-->
+                        <button class="scroll btn btn-warning btn-circle btn-lg" onclick="scrollToTop()" style="outline:none">
             <i class="fa fa-4x fa-angle-up "></i>
         </button>
 
 </body>
 
 
-
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
+
 <script src="js/bootstrap.min.js"></script>
 <script type="text/javascript" src="js/moment.min.js"></script>
 <script type="text/javascript" src="js/daterangepicker.js"></script>
 <script type="text/javascript" src="js/highcharts.js"></script>
 <script type="text/javascript" src="js/script.js"></script>
+<!--<script type="text/javascript" src="js/jspdf.js"></script>
+<script>
+    var doc = new jsPDF();
+    var specialElementHandlers = {
+        '#editor': function (element, renderer) {
+            return true;
+        }
+    };
+
+    $('#cmd').click(function () {
+        doc.fromHTML($('#content').html(), 15, 15, {
+            'width': 170,
+                'elementHandlers': specialElementHandlers
+        });
+        doc.save('sample-file.pdf');
+    });
+    // This code is collected but useful, click below to jsfiddle link.
+</script>-->
 
 
 </html>

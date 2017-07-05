@@ -1,17 +1,135 @@
-let time_list = [{"name":"12:00 AM","value":"24"},{"name":"1:00 AM","value":"1"},{"name":"2:00 AM","value":"2"},{"name":"3:00 AM","value":"3"},{"name":"4:00 AM","value":"4"},{"name":"5:00 AM","value":"5"},{"name":"6:00 AM","value":"6"},{"name":"7:00 AM","value":"7"},{"name":"8:00 AM","value":"8"},{"name":"9:00 AM","value":"9"},{"name":"10:00 AM","value":"10"},{"name":"11:00 AM","value":"11"},{"name":"12:00 PM","value":"12"},{"name":"1:00 PM","value":"13"},{"name":"2:00 PM","value":"14"},{"name":"3:00 PM","value":"15"},{"name":"4:00 PM","value":"16"},{"name":"5:00 PM","value":"17"},{"name":"6:00 PM","value":"18"},{"name":"7:00 PM","value":"19"},{"name":"8:00 PM","value":"20"},{"name":"9:00 PM","value":"21"},{"name":"10:00 PM","value":"22"},{"name":"11:00 PM","value":"23"}];
+"use strict";
 
-var categories = ['55+', '45-54', '35-44', '25-34',
-    '18-24', 'Under 18'
-];
+// let tokenID  =  document.URL.substr(document.URL.indexOf("=") + 1);
+// window.history.pushState('page2', 'Title', 'file:///C:/Users/WhitelineTech/Desktop/esquare/surveyV1.2/index.html');
+
+// history.pushState(null, document.title, location.href);
+// window.addEventListener('popstate', function (event)
+// {
+//   history.pushState(null, document.title, location.href);
+// });
+$('body').show();
+// if(sessionStorage.token != null){
+     
+// }else{
+//     window.location = "http://survey-report.triple3.io"
+// }
+
+
+/* When the user clicks on the button, 
+toggle between hiding and showing the dropdown content */
+function dropdownLogOut() {
+    document.getElementById("myDropdown").classList.toggle("show");
+    document.getElementById("myDropdownTri").classList.toggle("show");
+}
+
+// Close the dropdown menu if the user clicks outside of it
+window.onclick = function(event) {
+  if (!event.target.matches('.dropbtn')) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    var i;
+    for (i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+      }
+    }
+  }
+}
+
+function logout(){
+
+    sessionStorage.clear();
+    window.location = "http://survey-report.triple3.io"
+
+}
+
+
+let time_list = [{
+    "name": "12:00 AM",
+    "value": "24"
+}, {
+    "name": "1:00 AM",
+    "value": "1"
+}, {
+    "name": "2:00 AM",
+    "value": "2"
+}, {
+    "name": "3:00 AM",
+    "value": "3"
+}, {
+    "name": "4:00 AM",
+    "value": "4"
+}, {
+    "name": "5:00 AM",
+    "value": "5"
+}, {
+    "name": "6:00 AM",
+    "value": "6"
+}, {
+    "name": "7:00 AM",
+    "value": "7"
+}, {
+    "name": "8:00 AM",
+    "value": "8"
+}, {
+    "name": "9:00 AM",
+    "value": "9"
+}, {
+    "name": "10:00 AM",
+    "value": "10"
+}, {
+    "name": "11:00 AM",
+    "value": "11"
+}, {
+    "name": "12:00 PM",
+    "value": "12"
+}, {
+    "name": "1:00 PM",
+    "value": "13"
+}, {
+    "name": "2:00 PM",
+    "value": "14"
+}, {
+    "name": "3:00 PM",
+    "value": "15"
+}, {
+    "name": "4:00 PM",
+    "value": "16"
+}, {
+    "name": "5:00 PM",
+    "value": "17"
+}, {
+    "name": "6:00 PM",
+    "value": "18"
+}, {
+    "name": "7:00 PM",
+    "value": "19"
+}, {
+    "name": "8:00 PM",
+    "value": "20"
+}, {
+    "name": "9:00 PM",
+    "value": "21"
+}, {
+    "name": "10:00 PM",
+    "value": "22"
+}, {
+    "name": "11:00 PM",
+    "value": "23"
+}];
+
+var categories = ['55+', '45-54', '35-44', '25-34', '18-24', 'Under 18'];
 let getSelectBranch = document.getElementById('branch0');
 let getSelectValue = document.getElementById('values0');
 let formbusiness = document.getElementById('formbusiness');
 let formSelect = document.getElementById('formSelect');
 let blackdrop = document.getElementById('blackdrop');
-
+let is_completed;
+let is_identified;
 let branch_list = {};
 let IDform = 1;
-let startdate, enddate
+let startdate, enddate;
 let countFilter = [];
 let sum_question = [];
 let sum_question_table = [];
@@ -23,7 +141,6 @@ let sum_gender_line = [];
 var start = moment().startOf('day');
 var end = moment().endOf('day');
 
-
 var model = {
 
     getDate: function (start, end) {
@@ -34,7 +151,7 @@ var model = {
     },
     onloadFetch: function () {
         $.ajax({
-            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/list/form",
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/selector/form",
             type: "GET",
             dataType: 'json'
         }).done(function (result) {
@@ -49,9 +166,9 @@ var model = {
         });
 
         $.ajax({
-            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/list/tags",
+            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/selector/tags",
             type: "GET",
-            dataType: 'json',
+            dataType: 'json'
         }).done(function (data) {
             branch_list = data.data;
             let key = [];
@@ -61,11 +178,15 @@ var model = {
             view.createFormList(key, key, getSelectBranch);
         });
     },
-    fetchAPI : function(com , iden){
-        
-        if ((com && iden) == null){
+    fetchAPI: function (com, iden) {
+
+        if ((com && iden) == null) {
+
             com = '*';
             iden = '*';
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById('inlineCheckbox' + i).checked = true;
+            }
         }
         document.getElementById('blackdrop').style.display = 'block';
         let param = {
@@ -78,19 +199,19 @@ var model = {
             "startdate": startdate,
             "enddate": enddate,
             "form": formbusiness.value,
-            "branch":  getSelectValue.value,
+            "branch": getSelectValue.value,
             "is_completed": com,
             "is_identified": iden
-        }
+        };
         let header = {
-            "Content-Type": 'application/json',
+            "Content-Type": 'application/json; charset=utf-8',
             "Cache-Control": "no-cache"
-        }
+        };
         let header_no_cache = {
-            "Content-Type": 'application/json'
-        }
- 
-        // get total number of form
+            "Content-Type": 'application/json; charset=utf-8'
+
+            // get total number of form
+        };
         $.ajax({
             crossDomain: true,
             url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/selector/filter",
@@ -99,9 +220,8 @@ var model = {
             processData: false,
             data: JSON.stringify(param)
         }).done(function (response) {
-            
-             countFilter = response.data;
-             view.countForm();
+            countFilter = response.data;
+            view.countForm();
         });
         // Progress Score
         $.ajax({
@@ -112,94 +232,105 @@ var model = {
             processData: false,
             data: JSON.stringify(param_with_filter),
             success: function (response) {
-                 if (response.data.length == 0) { 
+                createall(response.data , function(){
+                    // Graph Emotion Gender
+                    $.ajax({
+                        crossDomain: true,
+                        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question",
+                        headers: header_no_cache,
+                        type: "POST",
+                        processData: false,
+                        data: JSON.stringify(param_with_filter),
+                        success: function (response) {
+                            sum_question = response.data;
+                        }
+                    }).done(function () {
+                        createSummaryQuestion();
+                    });
+                    // Table
+                    $.ajax({
+                        crossDomain: true,
+                        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-table",
+                        headers: header_no_cache,
+                        type: "POST",
+                        processData: false,
+                        data: JSON.stringify(param_with_filter),
+                        success: function (response) {
+                            sum_question_table = response.data;
+                        }
+                    }).done(function () {
+                        view.removeTable();
+                    });
+
+                    // LINE GRAPH Each question
+                    $.ajax({
+                        crossDomain: true,
+                        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-graph",
+                        headers: header_no_cache,
+                        type: "POST",
+                        processData: false,
+                        data: JSON.stringify(param_with_filter),
+                        success: function (response) {
+                            sum_question_graph = response.data;
+                        }
+                    }).done(function () {
+                        createSummaryQuestionGraph();
+                    });
+                    //  P' Kwan API
+                    //Summary -Question - Graph
+                    $.ajax({
+                        crossDomain: true,
+                        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/age-graph",
+                        headers: header,
+                        type: "POST",
+                        processData: false,
+                        data: JSON.stringify(param_with_filter),
+                        success: function (response) {
+
+                            sum_gender = response.data;
+                        }
+                    }).done(function () {
+                        createGenderGraph();
+                    });
+                    // Line Graph 
+                    $.ajax({
+                        crossDomain: true,
+                        url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/gender-graph/",
+                        headers: header,
+                        type: "POST",
+                        processData: false,
+                        data: JSON.stringify(param_with_filter),
+                        success: function (response) {
+
+                            sum_gender_line = response.data;
+                        }
+                    }).done(function (response) {
+
+                        createGenderLineGrape();
+                    });
+
+                });
+
+                if (response.data[0].que_sum_score == 0) {
+
                     view.display('hide');
                     document.getElementById('showForm').style.display = 'block';
                     document.getElementById('blackdrop').style.display = 'none';
                 } else {
+
                     view.display('show');
                     createProgQuestion(response.data);
                     document.getElementById('blackdrop').style.display = 'none';
-                }   
+                }
             }
         });
-        // Graph Emotion Gender
-        $.ajax({
-            crossDomain: true,
-            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question",
-            headers: header_no_cache,
-            type: "POST",
-            processData: false,
-            data: JSON.stringify(param_with_filter),
-            success: function (response) {
-                sum_question = response.data;
-            }
-        }).done(function () {
-            createSummaryQuestion();
-        });
-        // Table
-        $.ajax({
-            crossDomain: true,
-            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-table",
-            headers: header_no_cache,
-            type: "POST",
-            processData: false,
-            data: JSON.stringify(param_with_filter),
-            success: function (response) {
-                sum_question_table = response.data;
-            }
-        }).done(function () {
-            view.removeTable();
-        });
-
-         // LINE GRAPH Each question
-        $.ajax({
-            crossDomain: true,
-            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-graph",
-            headers: header_no_cache,
-            type: "POST",
-            processData: false,
-            data: JSON.stringify(param_with_filter),
-            success: function (response) {
-                sum_question_graph = response.data
-            }
-        }).done(function () {
-            createSummaryQuestionGraph();
-        });
-        //  P' Kwan API
-        //Summary -Question - Graph
-        $.ajax({
-            crossDomain: true,
-            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/age-graph",
-            headers: header,
-            type: "POST",
-            processData: false,
-            data: JSON.stringify(param_with_filter),
-            success: function (response) {
-                sum_gender = response.data
-            }
-        }).done(function () {
-            createGenderGraph();
-        });
-        // Line Graph 
-        $.ajax({
-            crossDomain: true,
-            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/gender-graph/",
-            headers: header ,
-            type: "POST",
-            processData: false,
-            data: JSON.stringify(param_with_filter),
-            success: function (response) {
-                sum_gender_line = response.data;
-            }
-        }).done(function () {
-            createGenderLineGrape();
-        });
+        
     }
 };
 
 var view = {
-    createFormList: function (key, value, formElem) { //create select dropdown
+    createFormList: function (key, value, formElem) {
+        //create select dropdown
         for (let i in key) {
             let opts = document.createElement('option');
             opts.value = key[i];
@@ -208,14 +339,13 @@ var view = {
             formElem.appendChild(opts);
         }
     },
-    countForm: function(){
+    countForm: function () {
 
-        for (let i = 1; i <= 5; i++) { 
+        for (let i = 1; i <= 5; i++) {
             //5 = number length of filterCheckbox type
             let elemnumber = document.getElementById('checknumber' + i);
             if (i === 1) {
-                elemnumber.innerText = countFilter[0].is_completed.true +
-                countFilter[0].is_completed.false;
+                elemnumber.innerText = countFilter[0].is_completed.true + countFilter[0].is_completed.false;
             } else if (i === 2) {
                 elemnumber.innerText = countFilter[0].is_completed.true;
             } else if (i === 3) {
@@ -227,30 +357,32 @@ var view = {
             }
         }
     },
-    display : function(atb){
+    display: function (atb) {
         if (atb == 'show') {
-            document.getElementById('display-section').style.display = 'block';
+            // document.getElementById('display-section').style.display = 'block';
+            $('#display-section').attr("style", "display: block !important;");
             document.getElementById('display-section-af-search').style.display = 'block';
             document.getElementById('error-display').style.display = 'none';
-        } else if(atb === 'hide') {
-            document.getElementById('display-section').style.display = 'none';
+        } else if (atb === 'hide') {
+            // document.getElementById('display-section').style.display = 'none';
+            $('#display-section').attr("style", "display: none !important;");
             document.getElementById('error-display').style.display = 'block';
             document.getElementById('error-text').innerText = 'No Data';
-        }
-        else if(atb === 'clear'){
-            document.getElementById('display-section').style.display = 'none';
+        } else if (atb === 'clear') {
+            // document.getElementById('display-section').style.display = 'none';
+            $('#display-section').attr("style", "display: none !important;");
             document.getElementById('error-display').style.display = 'none';
             document.getElementById('display-section-af-search').style.display = 'none';
         }
-    },  
-    graphEmotion : function(chart){
+    },
+    graphEmotion: function (chart) {
         Highcharts.chart('container-2-q1', chart[0]);
         Highcharts.chart('container-2-q2', chart[1]);
         Highcharts.chart('container-2-q3', chart[2]);
         Highcharts.chart('container-2-q4', chart[3]);
         Highcharts.chart('container-2-q5', chart[4]);
     },
-    setColor : function(pos,percent){
+    setColor: function (pos, percent) {
         if (percent > 0 && percent <= 25) {
             pos.style.backgroundColor = "#f1f8ff";
         } else if (percent > 25 && percent <= 50) {
@@ -261,18 +393,17 @@ var view = {
             pos.style.backgroundColor = "#a4d4ff";
         }
     },
-    precreateTable : function(){
+    precreateTable: function () {
         let score = [5, 4, 3, 2, 1];
         let gender = ['m', 'f', 'u']; // m = male  f = femalle u = unknow s = summary
         let allbody = document.querySelectorAll('.tbody-value');
         for (let b = 0; b < allbody.length; b++) {
             for (let i in time_list) {
                 let tr1 = document.createElement('tr');
-                tr1.innerHTML = `<td><b>` + time_list[i].name + `</b></td>`
-                for (x in gender) {
-                    for (j in score) {
-                        tr1.innerHTML +=
-                            `<td class="` + gender[x] + `-` + time_list[i].value + `-` + score[j] + `"></td>`;
+                tr1.innerHTML = `<td><b>` + time_list[i].name + `</b></td>`;
+                for (let x in gender) {
+                    for (let j in score) {
+                        tr1.innerHTML += `<td class="` + gender[x] + `-` + time_list[i].value + `-` + score[j] + `"></td>`;
                     }
                 }
                 tr1.innerHTML += `<td class="s-` + time_list[i].value + ` sum-col"></td>`;
@@ -283,9 +414,9 @@ var view = {
         let allSummaryrow = document.querySelectorAll('.summary-row');
         for (let i = 0; i < allSummaryrow.length; i++) {
             let trSum = document.createElement('tr');
-            trSum.innerHTML = `<td><b>Total</b></td>`
-            for (x in gender) {
-                for (j in score) {
+            trSum.innerHTML = `<td><b>Total</b></td>`;
+            for (let x in gender) {
+                for (let j in score) {
 
                     trSum.innerHTML += `<td class ="` + gender[x] + `-t-` + score[j] + ` sum-row"></td>`;
                 }
@@ -295,7 +426,7 @@ var view = {
         }
         createTable();
     },
-    removeTable : function(){
+    removeTable: function () {
         let all_body_table = document.querySelectorAll('.tbody-value');
         let all_row = document.querySelectorAll('.summary-row');
         for (let i = 0; i < all_body_table.length; i++) {
@@ -310,10 +441,10 @@ var view = {
         }
         view.precreateTable();
     }
-}
+};
 
 var ctrl = {
-    getCheckbox : function(id){
+    getCheckbox: function (id) {
         if (document.querySelector('#inlineCheckbox1').checked === false && document.querySelector('#inlineCheckbox2').checked === false) {
             if (id[id.length - 1] === '1') {
                 document.querySelector('#inlineCheckbox2').checked = true;
@@ -344,10 +475,10 @@ var ctrl = {
         if (document.querySelector('#inlineCheckbox3').checked && document.querySelector('#inlineCheckbox4').checked) {
             is_identified = '*';
         }
-        model.fetchAPI(is_completed,is_identified);
+        model.fetchAPI(is_completed, is_identified);
     }
-   
-}
+
+};
 
 window.onload = model.onloadFetch();
 
@@ -385,17 +516,20 @@ function generateColorSummary(vcol, hrow) {
     let eachRow = document.querySelectorAll('.sum-row');
     let eachCol = document.querySelectorAll('.sum-col');
     let totalelem = document.querySelectorAll('.total-summary');
-    for (let z = 0; z < totalelem.length; z++) { /// length = 5 all table
-        for (let i in eachCol) { // summary of column
+    for (let z = 0; z < totalelem.length; z++) {
+        /// length = 5 all table
+        for (let i in eachCol) {
+            // summary of column
             let valueOfEachCol = Number(eachCol[i].innerHTML);
-            let percent = Math.floor((valueOfEachCol / vcol[z]) * 100);
+            let percent = Math.floor(valueOfEachCol / vcol[z] * 100);
             if (typeof eachCol[i] !== 'undefined') {
                 view.setColor(eachCol[i], percent);
             }
         }
-        for (let i in eachRow) { // summary of row
+        for (let i in eachRow) {
+            // summary of row
             let valueOfEachRow = Number(eachRow[i].innerHTML);
-            let percent = Math.floor((valueOfEachRow / hrow[z]) * 100);
+            let percent = Math.floor(valueOfEachRow / hrow[z] * 100);
             if (typeof eachRow[i] !== 'undefined') {
                 view.setColor(eachRow[i], percent);
             }
@@ -412,30 +546,21 @@ function createGenderLineGrape() {
 
     for (let i in sum_gender_line) {
         // sum_gender_line[i] Object of m ,f ,all "key" == m/f/n
-        for (let j in sum_gender_line[i].interval_date) { //j = 'male' , 'female','all'
-
-            //var timestamp = moment(sum_gender_line[i].interval_date[j].datetime).utcOffset("+07:00").format('YYYY-MM-DD HH:mm');
-            var timestamp = new Date(sum_gender_line[i].interval_date[j].datetime).getTime();
-            if (sum_gender_line[i].key === 'male') { //sum_gender_line[i][j][z]) == {count , datetime}
-                all_men_arr.push([
-                    timestamp,
-                    sum_gender_line[i].interval_date[j].amount
-                ]);
-            } else if (sum_gender_line[i].key === 'female') { //sum_gender_line[i][j][z]) == {count , datetime}
-                all_women_arr.push([
-                    timestamp,
-                    sum_gender_line[i].interval_date[j].amount
-                ]);
-            } else if (sum_gender_line[i].key === 'all') { //sum_gender_line[i][j][z]) == {count , datetime}
-                all_gender_arr.push([
-                    timestamp,
-                    sum_gender_line[i].interval_date[j].amount
-                ]);
-            } else if (sum_gender_line[i].key === 'unknown') { //sum_gender_line[i][j][z]) == {count , datetime}
-                all_unknow_arr.push([
-                    timestamp,
-                    sum_gender_line[i].interval_date[j].amount
-                ]);
+        for (let j in sum_gender_line[i].interval_date) {
+            //j = 'male' , 'female','all'
+            var timestamp = moment.utc(sum_gender_line[i].interval_date[j].datetime).valueOf();
+            if (sum_gender_line[i].key === 'male') {
+                //sum_gender_line[i][j][z]) == {count , datetime}
+                all_men_arr.push([timestamp, sum_gender_line[i].interval_date[j].amount]);
+            } else if (sum_gender_line[i].key === 'female') {
+                //sum_gender_line[i][j][z]) == {count , datetime}
+                all_women_arr.push([timestamp, sum_gender_line[i].interval_date[j].amount]);
+            } else if (sum_gender_line[i].key === 'all') {
+                //sum_gender_line[i][j][z]) == {count , datetime}
+                all_gender_arr.push([timestamp, sum_gender_line[i].interval_date[j].amount]);
+            } else if (sum_gender_line[i].key === 'unknown') {
+                //sum_gender_line[i][j][z]) == {count , datetime}
+                all_unknow_arr.push([timestamp, sum_gender_line[i].interval_date[j].amount]);
             }
         }
     }
@@ -465,16 +590,10 @@ function createGenderLineGrape() {
         legend: {
             enabled: true,
             align: 'right',
-            verticalAlign: 'top',
+            verticalAlign: 'top'
         },
         credits: {
             enabled: false
-        },
-        plotOptions: {
-            // series: {
-            //     pointStart: 0
-            // }
-
         },
 
         series: [{
@@ -490,13 +609,12 @@ function createGenderLineGrape() {
             data: all_women_arr,
             color: '#E08283'
         }, {
-            name: 'N/A',
+            name: 'Un-Identified',
             data: all_unknow_arr,
             color: '#aaa'
         }]
 
     });
-
 }
 
 function createGenderGraph() {
@@ -574,7 +692,6 @@ function createGenderGraph() {
                 let total_gender;
                 let img;
 
-
                 if (name === 'Male') {
                     img = '<i class="fa fa-male icon-male" aria-hidden="true"></i>';
                     total_gender = total_m / total * 100;
@@ -643,42 +760,44 @@ function createGenderGraph() {
 }
 
 function createSummaryQuestion() {
-
-    let data_question = []
+    let data_question = [];
     let data_question_sum = [];
-    for (i in sum_question) { // i = q1,q2,q3,q4,q5
-        for (let j = 0; j < sum_question[i].length; j++) {
 
-            if (sum_question[i][j].choice === 1) {
+    for (let i in sum_question) {
+        // i = q1,q2,q3,q4,q5
+        // console.log(sum_question[i]); Object of q1,2,3,4,5
+        for (let j in sum_question[i]) {
+            // j is a1,a2,a3
+            if (j[j.length - 1] == 1) {
                 var q1 = {
                     name: 'Upset',
                     color: '#e74c3c',
                     y: sum_question[i][j].total
-                }
-            } else if (sum_question[i][j].choice === 2) {
+                };
+            } else if (j[j.length - 1] == 2) {
                 var q1 = {
                     name: 'Dislike',
                     color: '#e67e22',
                     y: sum_question[i][j].total
-                }
-            } else if (sum_question[i][j].choice === 3) {
+                };
+            } else if (j[j.length - 1] == 3) {
                 var q1 = {
                     name: 'Normal',
                     color: '#f1c40f',
                     y: sum_question[i][j].total
-                }
-            } else if (sum_question[i][j].choice === 4) {
+                };
+            } else if (j[j.length - 1] == 4) {
                 var q1 = {
                     name: 'Like',
                     color: '#96CFEA',
                     y: sum_question[i][j].total
-                }
-            } else if (sum_question[i][j].choice === 5) {
+                };
+            } else if (j[j.length - 1] == 5) {
                 var q1 = {
                     name: 'Love',
                     color: '#004384',
                     y: sum_question[i][j].total
-                }
+                };
             }
             data_question.push(q1);
         }
@@ -717,16 +836,7 @@ function createSummaryQuestion() {
                     padding: 5,
                     useHTML: true,
                     formatter: function () {
-                        if (this.value == "Love")
-                            return '<img src="img/point1.png" style="width: 30px; vertical-align: middle" />';
-                        else if (this.value == "Like")
-                            return '<img src="img/point2.png" style="width: 30px; vertical-align: middle" />';
-                        else if (this.value == "Normal")
-                            return '<img src="img/point3.png" style="width: 30px; vertical-align: middle" />';
-                        else if (this.value == "Dislike")
-                            return '<img src="img/point4.png" style="width: 30px; vertical-align: middle" />';
-                        else if (this.value == "Upset")
-                            return '<img src="img/point5.png" style="width: 30px; vertical-align: middle" />';
+                        if (this.value == "Love") return '<img src="img/point1.png" style="width: 30px; vertical-align: middle" />';else if (this.value == "Like") return '<img src="img/point2.png" style="width: 30px; vertical-align: middle" />';else if (this.value == "Normal") return '<img src="img/point3.png" style="width: 30px; vertical-align: middle" />';else if (this.value == "Dislike") return '<img src="img/point4.png" style="width: 30px; vertical-align: middle" />';else if (this.value == "Upset") return '<img src="img/point5.png" style="width: 30px; vertical-align: middle" />';
                     },
                     style: {
                         height: 30
@@ -757,33 +867,45 @@ function createSummaryQuestion() {
 }
 // P' vit DID
 function createSummaryQuestionGraph() {
-
     let male_data = [];
     let female_data = [];
     let na_data = [];
     let all_data = [];
+
+    let all_count = [];
 
     for (let i = 0; i < 5; i++) {
         na_data[i] = [];
         male_data[i] = [];
         female_data[i] = [];
         all_data[i] = [];
+
+        let all_count_male = [];
+        let all_count_female = [];
+        let all_count_na = [];
+
         for (let j = 0; j < 24; j++) {
-            male_data_temp = 0;
-            male_data_sum = 0;
-            female_data_temp = 0;
-            female_data_sum = 0;
-            na_data_temp = 0;
-            na_data_sum = 0;
-            all_data_temp = 0;
-            all_data_sum = 0;
+            let male_data_temp = 0;
+            let male_data_sum = 0;
+            let female_data_temp = 0;
+            let female_data_sum = 0;
+            let na_data_temp = 0;
+            let na_data_sum = 0;
+            let all_data_temp = 0;
+            let all_data_sum = 0;
+
+            let count_male = 0;
+            let count_female = 0;
+            let count_na = 0;
 
             for (let k = 1; k <= 5; k++) {
                 if (sum_question_graph["q" + (i + 1)]["Male"] !== undefined) {
                     if (sum_question_graph["q" + (i + 1)]["Male"]["" + k] !== undefined) {
                         if (sum_question_graph["q" + (i + 1)]["Male"]["" + k]["" + j] !== undefined) {
+
                             male_data_temp += sum_question_graph["q" + (i + 1)]["Male"]["" + k]["" + j] * k;
                             male_data_sum += sum_question_graph["q" + (i + 1)]["Male"]["" + k]["" + j] * 5;
+                            count_male += sum_question_graph["q" + (i + 1)]["Male"]["" + k]["" + j];
                         }
                     }
                 }
@@ -792,6 +914,7 @@ function createSummaryQuestionGraph() {
                         if (sum_question_graph["q" + (i + 1)]["Female"]["" + k]["" + j] !== undefined) {
                             female_data_temp += sum_question_graph["q" + (i + 1)]["Female"]["" + k]["" + j] * k;
                             female_data_sum += sum_question_graph["q" + (i + 1)]["Female"]["" + k]["" + j] * 5;
+                            count_female += sum_question_graph["q" + (i + 1)]["Female"]["" + k]["" + j];
                         }
                     }
                 }
@@ -800,28 +923,34 @@ function createSummaryQuestionGraph() {
                         if (sum_question_graph["q" + (i + 1)]["Unidentified"]["" + k]["" + j] !== undefined) {
                             na_data_temp += sum_question_graph["q" + (i + 1)]["Unidentified"]["" + k]["" + j] * k;
                             na_data_sum += sum_question_graph["q" + (i + 1)]["Unidentified"]["" + k]["" + j] * 5;
+                            count_na += sum_question_graph["q" + (i + 1)]["Unidentified"]["" + k]["" + j];
                         }
                     }
                 }
             }
 
             all_data_temp = male_data_temp + female_data_temp + na_data_temp;
-            all_data_sum = male_data_sum + female_data_sum + na_data_temp;
+            all_data_sum = male_data_sum + female_data_sum + na_data_sum;
+
             if (all_data_sum == 0) {
                 all_data_sum = NaN;
             }
+            all_count_male.push(count_male);
+            all_count_female.push(count_female);
+            all_count_na.push(count_na);
+
             na_data[i].push(na_data_temp);
             male_data[i].push(male_data_temp);
             female_data[i].push(female_data_temp);
-            all_data[i].push(all_data_sum)
-
+            all_data[i].push(all_data_sum);
         }
+        all_count.push({ 'Male': all_count_male, 'Female': all_count_female, 'Un-Identified': all_count_na });
     }
-
     // Collect All Data
     let chart_Question = [];
+
     for (let i = 0; i < 5; i++) {
-        chart_Question.push({
+        chart_Question[i] = new Highcharts.chart('container-1-q' + (i + 1), {
             chart: {
                 type: 'column'
             },
@@ -850,13 +979,33 @@ function createSummaryQuestionGraph() {
                 column: {
                     stacking: 'normal'
 
+                },
+                series: {
+                    events: {
+                        legendItemClick: function () {
+                            // console.log(all_count[i].Male);
+                            let name = this.name;
+                            var legenedItemIndex = this.index; // index of highchart legend item
+                            var visibility = this.visible ? 'hidden' : 'visible'; // check series visibility ?
+                            if (legenedItemIndex !== 3) {
+                                // 3 is full score don't mess with it!!
+                                for (let j in this.options.data) {
+                                    if (!isNaN(all_data[i][j])) {
+                                        if (visibility == 'hidden') {
+                                            all_data[i][j] -= all_count[i][name][j] * 5;
+                                        } else {
+                                            all_data[i][j] += all_count[i][name][j] * 5;
+                                        }
+                                    }
+                                }
+                            }
+                            redraw(chart_Question[i], all_data[i]);
+                        }
+                    }
                 }
-
             },
             xAxis: {
-                categories: ['12AM', '1AM', '2AM', '3AM', '4AM', '5AM', '6AM', '7AM', '8AM', '9AM', '10AM', '11AM', '12PM',
-                    '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'
-                ]
+                categories: ['12AM', '1AM', '2AM', '3AM', '4AM', '5AM', '6AM', '7AM', '8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM', '9PM', '10PM', '11PM']
             },
             tooltip: {
                 formatter: function () {
@@ -876,9 +1025,8 @@ function createSummaryQuestionGraph() {
                 color: '#E08283',
                 pointPadding: -0.2
 
-
             }, {
-                name: 'N/A',
+                name: 'Un-Identified',
                 data: na_data[i],
                 color: '#aaa',
                 pointPadding: -0.2
@@ -895,13 +1043,9 @@ function createSummaryQuestionGraph() {
             }]
         });
     }
-
-    Highcharts.chart('container-1-q1', chart_Question[0]);
-    Highcharts.chart('container-1-q2', chart_Question[1]);
-    Highcharts.chart('container-1-q3', chart_Question[2]);
-    Highcharts.chart('container-1-q4', chart_Question[3]);
-    Highcharts.chart('container-1-q5', chart_Question[4]);
-
+}
+function redraw(chart, data) {
+    chart.series[3].setData(data, true, true, false);
 }
 
 function createTable() {
@@ -912,15 +1056,18 @@ function createTable() {
     let all_count_v_color = [];
     let all_count_h_color = [];
 
-    for (let i in sum_question_table) { // i = q1,q2,q3
+    for (let i in sum_question_table) {
+        // i = q1,q2,q3
         let count_v_color = 0;
         let count_h_color = 0;
         let sum_total_ele = document.getElementById('sum-' + i); //last column last row
         let sum_total_row_ele = document.getElementById('summary-' + i); //all sum row 
         let bodyIdx = document.getElementById('table-body-' + i); // get tbody
-        for (let j in sum_question_table[i]) { // j = male,female,n/a
+        for (let j in sum_question_table[i]) {
+            // j = male,female,n/a
             //  console.log(sum_question_table[i][j]); // == inside m,f,n
-            for (let z in sum_question_table[i][j]) { /// z  === type of score
+            for (let z in sum_question_table[i][j]) {
+                /// z  === type of score
                 // console.log(sum_question_table[i][j][z]);  /// sum_question_table[i][j][z] == Object  of time
                 for (let time in sum_question_table[i][j][z]) {
                     // console.log(sum_question_table[i][j][z][time]); /// value
@@ -935,7 +1082,6 @@ function createTable() {
                         sum_total_row_ele.querySelector('.m-t-' + z).innerText = Number(sum_total_row_ele.querySelector('.m-t-' + z).innerText) + sum_question_table[i][j][z][time]; //this line for summary column
 
                         sum_total += sum_question_table[i][j][z][time];
-
                     } else if (j === 'Female') {
 
                         bodyIdx.querySelector('.f' + '-' + time + '-' + z).innerText = sum_question_table[i][j][z][time];
@@ -951,7 +1097,6 @@ function createTable() {
 
                         sum_total_row_ele.querySelector('.u-t-' + z).innerText = Number(sum_total_row_ele.querySelector('.u-t-' + z).innerText) + sum_question_table[i][j][z][time]; //this line for summary column
                         sum_total += sum_question_table[i][j][z][time];
-
                     }
                     // bodyIdx.querySelector('.s'+'-'+time).innerText = sum_per_row+1;
                     let max_h = Math.max(Number(sum_total_row_ele.querySelector('.u-t-' + z).innerText), Number(sum_total_row_ele.querySelector('.f-t-' + z).innerText), Number(sum_total_row_ele.querySelector('.m-t-' + z).innerText));
@@ -962,7 +1107,6 @@ function createTable() {
                     if (Number(count_v_color) <= Number(bodyIdx.querySelector('.s' + '-' + time).innerText)) {
                         count_v_color = bodyIdx.querySelector('.s' + '-' + time).innerText;
                     }
-
                 }
                 sum_per_row = 0;
             }
@@ -986,17 +1130,16 @@ function createProgQuestion(data) {
     let sum_score = 0;
     let percent_summary = 0;
     for (let i in data) {
-        count = count += data[i].que_count * 5;
+        count = count += data[i].doc_count * 5;
         sum_score = sum_score += data[i].que_sum_score;
-        percent_summary = Math.floor((sum_score / count) * 100);
+        percent_summary = Math.floor(sum_score / count * 100);
         if (data[i].que_sum_score == 0) {
             var percent_value = " - ";
         } else {
-            var percent_value = Math.floor((data[i].que_sum_score / (data[i].que_count * 5)) * 100)
+            var percent_value = Math.floor(data[i].que_sum_score / (data[i].doc_count * 5) * 100);
         }
-        let progress_element =
-            `<div class="form-group">
-                    <label class="label-title"> ` + data[i].que_id + `. ` + data[i].que_name + ` </label>
+        let progress_element = `<div class="form-group">
+                    <label class="label-title"> ` + data[i].q_num + `. ` + data[i].question[0] + ` </label>
                     <div class="progress col-lg-10" style="padding:0">
                         <div class="progress-bar color-intensity-2" role="progressbar" 
                         aria-valuenow="` + percent_value + `"
@@ -1005,38 +1148,36 @@ function createProgQuestion(data) {
                             <span class="progress-value">` + percent_value + `%</span>
                         </div>
                     </div>
-                    <span class="col-lg-2 ">` + data[i].que_sum_score + '/' + data[i].que_count * 5 + `</span>
-                </div>`
+                    <span class="col-lg-2 ">` + data[i].que_sum_score + '/' + data[i].doc_count * 5 + `</span>
+                </div>`;
         // 5 is max score 
         prog_elem.insertAdjacentHTML('beforeend', progress_element);
     }
-    let createSumProgElem =
-        `<div class="progress margin-top-1 col-lg-10" style="padding:0">
+    let createSumProgElem = `<div class="progress margin-top-1 col-lg-10" style="padding:0">
                 <div class="progress-bar color-intensity-3" role="progressbar" aria-valuenow="` + percent_summary + `"
                                 aria-valuemin="0" aria-valuemax="100" style="width:` + percent_summary + `%">
                      <span class="progress-value"><b>` + percent_summary + `%</b></span>
                 </div>
             </div>
-            <span class="col-lg-2 progress-number">` + sum_score + '/' + count + `</span>`
+            <span class="col-lg-2 progress-number">` + sum_score + '/' + count + `</span>`;
     sum_prog_elem.insertAdjacentHTML('beforeend', createSumProgElem);
 }
 
 function addFilter() {
 
-    let FormDIV = document.getElementById('filterForm');// clone div filter dropdown
-    let cln = FormDIV.cloneNode(true);//set id in filterform
+    let FormDIV = document.getElementById('filterForm'); // clone div filter dropdown
+    let cln = FormDIV.cloneNode(true); //set id in filterform
     cln.id = "form" + IDform;
     let selectElem = cln.getElementsByTagName('select');
     selectElem[selectElem.length - 1].innerHTML = '';
     let div_elem = cln.getElementsByTagName('div');
     let createDefultOpt = `<option selected disabled value=''>-- Select --</option>`;
     selectElem[selectElem.length - 1].insertAdjacentHTML('beforeend', createDefultOpt);
-    cln.getElementsByTagName('label')[0].innerHTML = '' // clear text of label
+    cln.getElementsByTagName('label')[0].innerHTML = ''; // clear text of label
 
     for (let i = 0; i < selectElem.length; i++) {
         selectElem[i].id = selectElem[i].id + IDform; /// add id of <select> <= value , branch
         div_elem[i].id = div_elem[i].id + IDform; /// add id of <select> <= divvalue , divbranch
-
     }
 
     let lastDiv = cln.getElementsByTagName('div');
@@ -1054,14 +1195,14 @@ function checkState() {
 
     if (getSelectBranch.value !== '' && getSelectValue.value !== '' && formbusiness.value !== '') {
         document.getElementById('buttonShow').disabled = false;
-
     } else {
         document.getElementById('buttonShow').disabled = true;
     }
 }
 
 function removeForm(id) {
-    document.getElementById(id).remove();
+    let parentFilter = document.getElementById('formSelect');
+    parentFilter.removeChild(document.getElementById(id));
 }
 
 function scrollToTop() {
@@ -1069,4 +1210,65 @@ function scrollToTop() {
     $("html,body").animate({
         scrollTop: $("html,body").offset().top
     }, "1000");
+}
+
+
+function createall(data , callback){
+
+    let containerQuestion = document.getElementById('question-all');
+    while (containerQuestion.hasChildNodes()) {
+       containerQuestion.removeChild(containerQuestion.lastChild);
+    }
+  
+    for(let i=0 ; i < data.length ; i++){
+        let creatediv = document.createElement('DIV');
+        creatediv.className = 'row';
+        creatediv.innerHTML = `
+            <div class="panel panel-default panel-body">
+                <h3> ` + data[i].q_num + `. `+ data[i].question[0] +`ความพึงพอใจในการต้อนรับ</h3>
+                <div class="col-md-8">
+                    <div id="container-1-q`+data[i].q_num+`"></div>
+                </div>
+                <div class="col-md-4">
+                    <div id="container-2-q`+data[i].q_num+`"></div>
+                </div>
+
+                <!--taboe-->
+                <div class="col-md-12 table-style" >
+                    <table style="width:100%" class="margin-top-5">
+                        <thead>
+                            <tr>
+                                 <td rowspan="2"></td>
+                                 <td colspan="5" class="border-right">
+                                     <b>Male </b> 
+                                 </td>
+                                 <td colspan="5" class="border-right">
+                                     <b>Female</b>  
+                                 </td>
+                                 <td colspan="5" class="border-right">
+                                     <b>Un-Identified</b>  
+                                 </td>
+                                 <td rowspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
+                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
+                                <td>Love</td><td>Like</td><td>Normal</td><td>Dislike</td><td class="border-right">Upset</td>
+                                 
+                            </tr>
+                        </thead>
+                        <tbody id = "table-body-q`+data[i].q_num+`" class = "tbody-value"> 
+
+                        </tbody>
+                        <tbody  class="border-disable summary-row" id = "summary-q`+data[i].q_num+`"> 
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+        console.log(creatediv);
+        containerQuestion.appendChild(creatediv);
+    }
+    console.log(containerQuestion);
+    callback();
 }
