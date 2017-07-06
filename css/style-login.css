@@ -1,0 +1,92 @@
+@font-face {
+    font-family: 'CSChatThai';
+    src: url("../fonts/CSChatThai.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+body {
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering:optimizeLegibility;
+    -webkit-text-stroke:1px transparent;
+}
+* {-webkit-font-smoothing:subpixel-antialiased;text-rendering:optimizeLegibility;-webkit-text-stroke:1px transparent;}
+.avia-safari body,.avia-mozilla body { -webkit-font-smoothing: subpixel-antialiased; }
+
+
+p,
+h1,
+h2,
+h3,
+h4,
+span {
+    font-family: 'CSChatThai';
+    font-weight: normal;
+    margin: 0;
+}
+    #aa_particles {
+            z-index: -1;
+            height: 100%;
+            background: #2C3E50;  /* fallback for old browsers */
+background: -webkit-linear-gradient(to bottom, #4CA1AF, #2C3E50);  /* Chrome 10-25, Safari 5.1-6 */
+background: linear-gradient(to bottom, #4CA1AF, #2C3E50); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+            position: fixed;
+            width: 100%;
+            top: 0;
+        }
+
+        .wrapper {
+            margin-top: 45px;
+            
+        }
+
+        .form-signin {
+            max-width: 420px;
+            padding: 30px 38px 66px;
+            margin: 0 auto;
+            border: 1px solid #cccccc;
+            background: rgba(255,255,255,.5);
+        }
+
+        .input-group {
+            height: 45px;
+            margin-bottom: 15px;
+            border-radius: 0px;
+            color: #4BAEB6;
+        }
+
+        .form-control {
+            height: 45px;
+            color: #4BAEB6;
+        }
+        .form-signin-heading{
+            padding-top:   10px;
+            font-weight: 800;
+            color:  #4C4C4C;
+        }
+
+        .input-group:hover span i {
+            color: #4BAEB6;
+        }
+
+        .btn-block {
+            border-radius: 0px;
+            margin-top: 25px;
+            background-color: #4BAEB6;
+            border: none;
+        }
+
+        .btn-block:hover {
+            background-color: rgb(139, 213, 219);
+        }
+
+        .bol {
+            position: relative;
+            margin-top: -40px;
+            color: #4BAEB6;
+        }
+
+
+        #problem{
+            color:red;
+        }
