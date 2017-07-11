@@ -15,7 +15,7 @@ $('form').submit(function (e) {
 
         arrText.push($(this).val());
     })
-
+    document.getElementById('blackdrop').style.display = 'block';
     $.ajax({
         url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/login",
         type: "POST",
@@ -28,14 +28,15 @@ $('form').submit(function (e) {
             username : arrText[1].trim(),
             password : arrText[2].trim()
         }), success: function (response) {
-            console.log(response.success);
             if(response.success){
-                sessionStorage.token = response.data.token;
+                sessionStorage.token = response.data.idToken;
                 window.location = "/index.html";
                 // window.location = "file:///C:/Users/WhitelineTech/Desktop/esquare/surveyV1.2/index.html?=" + response.data.token;
             }else{
                 $("#problem").html("Username or Password Incorrect!");
             }
         }
+    }).done(function(){
+        document.getElementById('blackdrop').style.display = 'none';
     });
 });
