@@ -1,11 +1,11 @@
 "use strict";
+$('body').show();
 
-if(sessionStorage.token != null){
-    window.location = "/index.html"
-}else{
-    $('body').show();
-}
-
+// if(localStorage.idToken != null){
+//     window.location = "/index.html"
+// }else{
+//     $('body').show();
+// }
 
 $('form').submit(function (e) {
     e.preventDefault();
@@ -29,11 +29,14 @@ $('form').submit(function (e) {
             password : arrText[2].trim()
         }), success: function (response) {
             if(response.success){
-                sessionStorage.token = response.data.idToken;
+                localStorage.idToken = response.data.idToken;
+                localStorage.refreshToken = response.data.refreshToken;
+                localStorage.business = arrText[0].trim();
+                localStorage.user = arrText[1].trim();
                 window.location = "/index.html";
                 // window.location = "file:///C:/Users/WhitelineTech/Desktop/esquare/surveyV1.2/index.html?=" + response.data.token;
             }else{
-                $("#problem").html("Username or Password Incorrect!");
+                $("#problem").html("Business or Username or Password Incorrect!");
             }
         }
     }).done(function(){

@@ -1,25 +1,23 @@
-
     "use strict";
-    if(sessionStorage.token != null){
+    if(localStorage.idToken != null){
          $('body').show();
     }else{
         window.location = "http://survey-report.triple3.io";
     }
-
+    // $('body').show();
     /* When the user clicks on the button, 
     toggle between hiding and showing the dropdown content */
     function dropdownLogOut() {
         document.getElementById("myDropdown").classList.toggle("show");
         document.getElementById("myDropdownTri").classList.toggle("show");
     }
-
     // Close the dropdown menu if the user clicks outside of it
     window.onclick = function (event) {
         if (!event.target.matches('.dropbtn')) {
-            var dropdowns = document.getElementsByClassName("dropdown-content");
-            var i;
-            for (i = 0; i < dropdowns.length; i++) {
-                var openDropdown = dropdowns[i];
+            let dropdowns = document.getElementsByClassName("dropdown-content");
+
+            for (let i = 0; i < dropdowns.length; i++) {
+                let openDropdown = dropdowns[i];
                 if (openDropdown.classList.contains('show')) {
                     openDropdown.classList.remove('show');
                 }
@@ -27,11 +25,36 @@
         }
     }
 
+    $('#excelDialog').popover({
+        title: `<h3>Export Excel</h3>`,
+        content: `<form action="javascript:ctrl.exportExcel();">
+                <div class="wrapper" id = "checkAnimate" style="display:none;">
+                    <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                        viewBox="0 0 98.5 98.5" enable-background="new 0 0 98.5 98.5" xml:space="preserve">
+                        <path class="checkmark" fill="none" stroke-width="8" stroke-miterlimit="10" d="M81.7,17.8C73.5,9.3,62,4,49.2,4
+                        C24.3,4,4,24.3,4,49.2s20.3,45.2,45.2,45.2s45.2-20.3,45.2-45.2c0-8.6-2.4-16.6-6.5-23.4l0,0L45.6,68.2L24.7,47.3"/>
+                    </svg>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-12" style="padding-right:0;padding-left:0;">
+                        <input id="email" name="email" type="email" placeholder="Your email" class="form-control"
+                        pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$" >
+                    </div>
+                </div>
+            <button class="btn btn-xs btn-primary btn-block" value="export" 
+                type="submit" style="padding: 5px;
+                    float: right;
+                    margin-top: 1em;
+                    margin-bottom: 1em;">export</button></form>`,
+        placement: 'top',
+        html: true,
+
+    });
+
     function logout() {
 
-        sessionStorage.clear();
+        localStorage.clear();
         window.location = "http://survey-report.triple3.io"
-
     }
 
 
@@ -110,8 +133,7 @@
     }];
 
     var categories = ['55+', '45-54', '35-44', '25-34', '18-24', 'Under 18'];
-    let getSelectBranch = document.getElementById('branch0');
-    let getSelectValue = document.getElementById('values0');
+    
     let formbusiness = document.getElementById('formbusiness');
     let formSelect = document.getElementById('formSelect');
     let blackdrop = document.getElementById('blackdrop');
@@ -131,33 +153,71 @@
     var start = moment().startOf('day');
     var end = moment().endOf('day');
 
-    var model = {
+    let arr_filter_select = [];
+    let stateClick = 0;
+    let tag = {};
 
+    var model = {
         getDate: function (start, end) {
             $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
             startdate = start.unix() * 1000;
             enddate = end.unix() * 1000;
             return startdate, enddate;
         },
+
+        refreshToken: function (com,iden) {
+            $.ajax({
+                crossDomain: true,
+                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/token/refresh",
+                type: "POST",
+                dataType: 'json',
+                headers: {
+                    "Content-Type": 'application/json; charset=utf-8',
+                    "Authorization": localStorage.refreshToken
+                },
+                data: JSON.stringify({
+                    username: localStorage.user
+                }),
+                processData: false,
+                success: function (response) {
+                    localStorage.idToken = response.data.idToken;
+                    
+                    if (com != null) {
+                        model.fetchAPI(com,iden);
+                    } else {
+                        model.onloadFetch();
+                    };
+                },
+                error: function () {
+                    localStorage.clear();
+                    window.location = "http://survey-report.triple3.io";
+                }
+            });
+        },
+
         onloadFetch: function () {
             $.ajax({
-                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/selector/form",
+                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/selector/form?business=" + localStorage.business,
                 type: "GET",
                 dataType: 'json',
                 headers: {
                     "Content-Type": 'application/json; charset=utf-8',
-                    "Authorization": sessionStorage.token
+                    "Authorization": localStorage.idToken
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    model.refreshToken();
+                },
+                success: function (result) {
+                    let form_list = result.data;
+                    let key = [],
+                        value = [];
+                    for (let i in form_list) {
+                        key.push(form_list[i].FormId);
+                        value.push(form_list[i].FormName);
+                    }
+                    view.createFormList(key, value, formbusiness);
                 }
-            }).done(function (result) {
-                var form_list = result.data;
-                let key = [],
-                    value = [];
-                for (let i in form_list) {
-                    key.push(form_list[i].FormId);
-                    value.push(form_list[i].FormName);
-                }
-                view.createFormList(key, value, formbusiness);
-            });
+            }).done(function () {});
 
             $.ajax({
                 url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/selector/tags",
@@ -165,20 +225,37 @@
                 dataType: 'json',
                 headers: {
                     "Content-Type": 'application/json; charset=utf-8',
-                    "Authorization": sessionStorage.token
-                    // get total number of form
+                    "Authorization": localStorage.idToken
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                  
+                },
+                success: function (data) {
+                    branch_list = data.data;
+                    // console.log(arr_filter_select);
+                    // branch_list = data.data;
+                    // let key = [];
+                    // for (let i in branch_list) {
+                    //     key.push(i.charAt(0).toUpperCase() + i.slice(1));
+                    // }
+                    // view.createFormList(key, key, getSelectBranch);
                 }
-            }).done(function (data) {
-                branch_list = data.data;
-                let key = [];
-                for (let i in branch_list) {
-                    key.push(i.charAt(0).toUpperCase() + i.slice(1));
-                }
-                view.createFormList(key, key, getSelectBranch);
             });
         },
         fetchAPI: function (com, iden) {
 
+            let filter_div = document.querySelectorAll('.filter-div');
+            let arr = [];
+            for(let i = 0 ; i < filter_div.length ; i++){
+                let get_branch = filter_div[i].querySelector('.branchs');
+                let get_value = filter_div[i].querySelector('.values');
+                if(get_branch.value.length > 0 && get_value.value.length > 0){
+                    arr.push(get_value.value);
+                    let key = get_branch.value.toLowerCase();
+                    tag[key] = arr 
+                }
+            }
+            console.log(tag);
             if ((com && iden) == null) {
 
                 com = '*';
@@ -192,26 +269,25 @@
                 "startdate": startdate,
                 "enddate": enddate,
                 "form": formbusiness.value,
-                "branch": getSelectValue.value
+                "tags": tag
             };
             let param_with_filter = {
                 "startdate": startdate,
                 "enddate": enddate,
                 "form": formbusiness.value,
-                "branch": getSelectValue.value,
+                "tags": tag,
                 "is_completed": com,
                 "is_identified": iden
             };
             let header = {
                 "Content-Type": 'application/json; charset=utf-8',
                 "Cache-Control": "no-cache",
-                "Authorization": sessionStorage.token
+                "Authorization": localStorage.idToken
 
             };
             let header_no_cache = {
                 "Content-Type": 'application/json; charset=utf-8',
-                "Authorization": sessionStorage.token
-                // get total number of form
+                "Authorization": localStorage.idToken
             };
             $.ajax({
                 crossDomain: true,
@@ -219,7 +295,10 @@
                 headers: header_no_cache,
                 type: "POST",
                 processData: false,
-                data: JSON.stringify(param)
+                data: JSON.stringify(param),
+                error: function (xhr, textStatus, errorThrown) {
+                    model.refreshToken(com, iden);
+                }
             }).done(function (response) {
                 countFilter = response.data;
                 view.countForm();
@@ -233,84 +312,91 @@
                 processData: false,
                 data: JSON.stringify(param_with_filter),
                 success: function (response) {
-                    createall(response.data, function () {
-                        // Graph Emotion Gender
-                        $.ajax({
-                            crossDomain: true,
-                            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question",
-                            headers: header_no_cache,
-                            type: "POST",
-                            processData: false,
-                            data: JSON.stringify(param_with_filter),
-                            success: function (response) {
-                                sum_question = response.data;
-                            }
-                        }).done(function () {
-                            createSummaryQuestion();
-                        });
-                        // Table
-                        $.ajax({
-                            crossDomain: true,
-                            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-table",
-                            headers: header_no_cache,
-                            type: "POST",
-                            processData: false,
-                            data: JSON.stringify(param_with_filter),
-                            success: function (response) {
-                                sum_question_table = response.data;
-                            }
-                        }).done(function () {
-                            view.removeTable();
-                        });
+                    if (!response.success) {
+                        view.display('hide');
+                        document.getElementById('showForm').style.display = 'block';
+                        document.getElementById('blackdrop').style.display = 'none';
+                    } else {
+                        createall(response.data, function () {
+                            // Graph Emotion Gender
+                            $.ajax({
+                                crossDomain: true,
+                                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question",
+                                headers: header_no_cache,
+                                type: "POST",
+                                processData: false,
+                                data: JSON.stringify(param_with_filter),
+                                success: function (response) {
+                                    sum_question = response.data;
+                                    // this error handler No Data!
+                                }
+                            }).done(function () {
+                                createSummaryQuestion();
+                            });
+                            // Table
+                            $.ajax({
+                                crossDomain: true,
+                                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-table",
+                                headers: header_no_cache,
+                                type: "POST",
+                                processData: false,
+                                data: JSON.stringify(param_with_filter),
+                                success: function (response) {
+                                    sum_question_table = response.data;
+                                }
+                            }).done(function () {
+                                view.removeTable();
+                            });
 
-                        // LINE GRAPH Each question
-                        $.ajax({
-                            crossDomain: true,
-                            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-graph",
-                            headers: header_no_cache,
-                            type: "POST",
-                            processData: false,
-                            data: JSON.stringify(param_with_filter),
-                            success: function (response) {
-                                sum_question_graph = response.data;
-                            }
-                        }).done(function () {
-                            createSummaryQuestionGraph();
+                            // LINE GRAPH Each question
+                            $.ajax({
+                                crossDomain: true,
+                                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/summary/question-graph",
+                                headers: header_no_cache,
+                                type: "POST",
+                                processData: false,
+                                data: JSON.stringify(param_with_filter),
+                                success: function (response) {
+                                    sum_question_graph = response.data;
+                                }
+                            }).done(function () {
+                                createSummaryQuestionGraph();
+                            });
+                            //  P' Kwan API
+                            //Summary -Question - Graph
+                            $.ajax({
+                                crossDomain: true,
+                                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/age-graph",
+                                headers: header,
+                                type: "POST",
+                                processData: false,
+                                data: JSON.stringify(param_with_filter),
+                                success: function (response) {
+
+                                    sum_gender = response.data;
+                                }
+                            }).done(function () {
+                                createGenderGraph();
+                            });
+                            // Line Graph 
+                            $.ajax({
+                                crossDomain: true,
+                                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/gender-graph/",
+                                headers: header,
+                                type: "POST",
+                                processData: false,
+                                data: JSON.stringify(param_with_filter),
+                                success: function (response) {
+
+                                    sum_gender_line = response.data;
+                                }
+                            }).done(function (response) {
+
+                                createGenderLineGrape();
+                            });
+
                         });
-                        //  P' Kwan API
-                        //Summary -Question - Graph
-                        $.ajax({
-                            crossDomain: true,
-                            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/age-graph",
-                            headers: header,
-                            type: "POST",
-                            processData: false,
-                            data: JSON.stringify(param_with_filter),
-                            success: function (response) {
-
-                                sum_gender = response.data;
-                            }
-                        }).done(function () {
-                            createGenderGraph();
-                        });
-                        // Line Graph 
-                        $.ajax({
-                            crossDomain: true,
-                            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/overall/gender-graph/",
-                            headers: header,
-                            type: "POST",
-                            processData: false,
-                            data: JSON.stringify(param_with_filter),
-                            success: function (response) {
-
-                                sum_gender_line = response.data;
-                            }
-                        }).done(function (response) {
-
-                            createGenderLineGrape();
-                        });
-
-                    });
+                    }
 
                     if (response.data[0].que_sum_score == 0) {
 
@@ -323,6 +409,9 @@
                         createProgQuestion(response.data);
                         document.getElementById('blackdrop').style.display = 'none';
                     }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    // model.refreshToken('click');
                 }
             });
 
@@ -345,16 +434,21 @@
             for (let i = 1; i <= 5; i++) {
                 //5 = number length of filterCheckbox type
                 let elemnumber = document.getElementById('checknumber' + i);
+                let total = countFilter[0].is_completed.true + countFilter[0].is_completed.false;
                 if (i === 1) {
                     elemnumber.innerText = countFilter[0].is_completed.true + countFilter[0].is_completed.false;
                 } else if (i === 2) {
-                    elemnumber.innerText = countFilter[0].is_completed.true;
+                    elemnumber.innerText = countFilter[0].is_completed.true + " form(s) \u2014 " + 
+                    Math.floor((countFilter[0].is_completed.true / total) * 100) + "%" ;
                 } else if (i === 3) {
-                    elemnumber.innerText = countFilter[0].is_completed.false;
+                    elemnumber.innerText = countFilter[0].is_completed.false + " form(s) \u2014 " + 
+                    Math.floor((countFilter[0].is_completed.false / total) * 100) + "%" ;
                 } else if (i === 4) {
-                    elemnumber.innerText = countFilter[0].is_identified.true;
+                    elemnumber.innerText = countFilter[0].is_identified.true + " form(s) \u2014 " + 
+                    Math.floor((countFilter[0].is_identified.true / total) * 100) + "%" ;
                 } else {
-                    elemnumber.innerText = countFilter[0].is_identified.false;
+                    elemnumber.innerText = countFilter[0].is_identified.false + " form(s) \u2014 " + 
+                    Math.floor((countFilter[0].is_identified.false / total) * 100) + "%" ;
                 }
             }
         },
@@ -385,13 +479,15 @@
         },
         setColor: function (pos, percent) {
             if (percent > 0 && percent <= 25) {
-                pos.style.backgroundColor = "#f1f8ff";
+                pos.style.setProperty("background", "rgb(241,248,255)", "important");
             } else if (percent > 25 && percent <= 50) {
-                pos.style.backgroundColor = "#d7ecff";
+                pos.style.setProperty("background", "rgb(215,236,255)", "important");
             } else if (percent > 50 && percent <= 75) {
-                pos.style.backgroundColor = "#bee0ff";
-            } else if (percent > 75 && percent <= 100) {
-                pos.style.backgroundColor = "#a4d4ff";
+                pos.style.setProperty("background", "rgb(190,224,255)", "important");
+            } else if (percent > 75 && percent <= 99) {
+                pos.style.setProperty("background", "rgb(164,212,255)", "important");
+            } else if (percent == 100) {
+                pos.style.setProperty("background", "#93bee5", "important") ;
             }
         },
         precreateTable: function () {
@@ -431,14 +527,10 @@
             let all_body_table = document.querySelectorAll('.tbody-value');
             let all_row = document.querySelectorAll('.summary-row');
             for (let i = 0; i < all_body_table.length; i++) {
-                while (all_body_table[i].hasChildNodes()) {
-                    all_body_table[i].removeChild(all_body_table[i].lastChild);
-                }
+                $('all_body_table[i]').innerHTML = '';
             }
             for (let i = 0; i < all_row.length; i++) {
-                while (all_row[i].hasChildNodes()) {
-                    all_row[i].removeChild(all_row[i].lastChild);
-                }
+                $('all_row[i]').innerHTML = '';
             }
             view.precreateTable();
         }
@@ -477,6 +569,48 @@
                 is_identified = '*';
             }
             model.fetchAPI(is_completed, is_identified);
+        },
+
+        exportExcel: function (com, iden) {
+
+            if (document.querySelector('#inlineCheckbox1').checked) {
+                is_completed = true;
+            } else {
+                is_completed = false;
+            }
+            if (document.querySelector('#inlineCheckbox3').checked) {
+                is_identified = true;
+            } else {
+                is_identified = false;
+            }
+            if (document.querySelector('#inlineCheckbox1').checked && document.querySelector('#inlineCheckbox2').checked) {
+                is_completed = '*';
+            }
+            if (document.querySelector('#inlineCheckbox3').checked && document.querySelector('#inlineCheckbox4').checked) {
+                is_identified = '*';
+            }
+            $.ajax({
+                crossDomain: true,
+                url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/export/excel",
+                headers: {
+                    "Content-Type": 'application/json; charset=utf-8',
+                    "Cache-Control": "no-cache",
+                    "Authorization": localStorage.token
+                },
+                type: "POST",
+                processData: false,
+                data: JSON.stringify({
+                    "startdate": startdate,
+                    "enddate": enddate,
+                    "form": formbusiness.value,
+                    "branch": getSelectValue.value,
+                    "is_completed": is_completed,
+                    "is_identified": is_identified
+                }),
+                success: function (response) {
+                    console.log(response);
+                }
+            }).done(function () {});
         }
 
     };
@@ -497,41 +631,31 @@
     }, model.getDate);
     model.getDate(start, end);
 
-    function getValueList(value, id) {
-
-        let getValueIdElem = document.getElementById('values' + id.slice(6));
-
-        for (let i in branch_list) {
-            if (i.toLowerCase() === value.toLowerCase()) {
-                getValueIdElem.innerHTML = '';
-                let key = branch_list[i];
-                let createDefultOpt = `<option selected disabled value=''>-- Select --</option>`;
-                getValueIdElem.insertAdjacentHTML('beforeend', createDefultOpt);
-                view.createFormList(key, key, getValueIdElem);
-            }
-        }
-    }
+    
 
     function generateColorSummary(vcol, hrow) {
 
-        let eachRow = document.querySelectorAll('.sum-row');
-        let eachCol = document.querySelectorAll('.sum-col');
+
         let totalelem = document.querySelectorAll('.total-summary');
+
         for (let z = 0; z < totalelem.length; z++) {
             /// length = 5 all table
-            for (let i in eachCol) {
-                // summary of column
+            let idTable = document.getElementById('table' + z);
+            let eachRow = idTable.querySelectorAll('.sum-row');
+            let eachCol = idTable.querySelectorAll('.sum-col');
+            for (let i in eachCol) { // loop 120 time 
+
                 let valueOfEachCol = Number(eachCol[i].innerHTML);
-                let percent = Math.floor(valueOfEachCol / vcol[z] * 100);
-                if (typeof eachCol[i] !== 'undefined') {
+                let percent = Math.floor((valueOfEachCol / vcol[z]) * 100);
+                if (typeof eachCol[i] !== 'undefined' && !isNaN(percent)) {
                     view.setColor(eachCol[i], percent);
                 }
             }
             for (let i in eachRow) {
-                // summary of row
+
                 let valueOfEachRow = Number(eachRow[i].innerHTML);
                 let percent = Math.floor(valueOfEachRow / hrow[z] * 100);
-                if (typeof eachRow[i] !== 'undefined') {
+                if (typeof eachRow[i] !== 'undefined' && !isNaN(percent)) {
                     view.setColor(eachRow[i], percent);
                 }
             }
@@ -559,13 +683,12 @@
                 } else if (sum_gender_line[i].key === 'all') {
                     //sum_gender_line[i][j][z]) == {count , datetime}
                     all_gender_arr.push([timestamp, sum_gender_line[i].interval_date[j].amount]);
-                } else if (sum_gender_line[i].key === 'unknown') {
+                } else if (sum_gender_line[i].key === 'undefined') {
                     //sum_gender_line[i][j][z]) == {count , datetime}
                     all_unknow_arr.push([timestamp, sum_gender_line[i].interval_date[j].amount]);
                 }
             }
         }
-
         Highcharts.chart('scoresummary', {
 
             title: {
@@ -618,8 +741,8 @@
         });
     }
 
-
     function createGenderGraph() {
+
         let m_data = [];
         let f_data = [];
 
@@ -654,7 +777,6 @@
                 }
             }
         }
-
 
         Highcharts.chart('container2', {
             chart: {
@@ -707,14 +829,12 @@
                     return img + '  ' + name + ' (' + total_gender.toFixed(2) + '%)';
                 }
             },
-
             yAxis: {
                 title: {
                     text: null
                 },
                 labels: {
                     formatter: function () {
-
                         return Math.abs(this.value) + '%';
                     }
                 },
@@ -760,7 +880,6 @@
             }]
         });
     }
-
 
     function createSummaryQuestion() {
         let data_question = [];
@@ -812,7 +931,8 @@
         for (let i = 0; i < data_question_sum.length; i++) {
             chart_Question.push({
                 chart: {
-                    type: 'column'
+                    type: 'column',
+                    marginBottom:50
                 },
                 title: {
                     text: ''
@@ -844,9 +964,6 @@
                             else if (this.value == "Normal") return '<img src="img/point3.png" style="width: 30px; vertical-align: middle" />';
                             else if (this.value == "Dislike") return '<img src="img/point4.png" style="width: 30px; vertical-align: middle" />';
                             else if (this.value == "Upset") return '<img src="img/point5.png" style="width: 30px; vertical-align: middle" />';
-                        },
-                        style: {
-                            height: 30
                         }
                     }
                 },
@@ -1171,86 +1288,139 @@
                         <span class="progress-value"><b>` + percent_summary + `%</b></span>
                     </div>
                 </div>
-
                 <span class="col-lg-2 progress-number">` + sum_score + '/' + count + `</span>`;
         sum_prog_elem.insertAdjacentHTML('beforeend', createSumProgElem);
     }
 
+
+    
     function addFilter() {
+        
+        if(stateClick === 0){
+            let formFieldset = document.getElementById('formSelect');
+            let elementFilter = document.createElement('div');
+            elementFilter.innerHTML = `<div class="form-group filter-div" id="filterForm">
+                                <label for="branch" class="col-lg-2 control-label">Filter : </label>
+                                <div class="col-lg-4 branch-style" id="branchDiv0">
+                                    <select class="form-control branchs" id="branch0" name="branch" onchange="getValueList(value , id);checkState()" autocomplete="off">
+                                        <option selected disabled value='' >-- Select --</option>
+                                    </select>
+                                </div>
+                                <div class="col-lg-6 branch-style" id="valueDiv0">
+                                    <select class="form-control values" id="values0" onchange="checkState()" autocomplete="off">
+                                        <option selected disabled value=''>-- Select --</option>
+                                    </select>
+                                    
+                                </div>
+                            </div>`;
+            formFieldset.appendChild(elementFilter);
+            let getSelectBranch = document.getElementById('branch0');
+            let getSelectValue = document.getElementById('values0');
+            let key = [];
+            for (let i in branch_list) {
+                key.push(i.charAt(0).toUpperCase() + i.slice(1));
+            }
+            view.createFormList(key, key, getSelectBranch);
 
-        let FormDIV = document.getElementById('filterForm'); // clone div filter dropdown
-        let cln = FormDIV.cloneNode(true); //set id in filterform
-        cln.id = "form" + IDform;
-        let selectElem = cln.getElementsByTagName('select');
-        selectElem[selectElem.length - 1].innerHTML = '';
-        let div_elem = cln.getElementsByTagName('div');
-        let createDefultOpt = `<option selected disabled value=''>-- Select --</option>`;
-        selectElem[selectElem.length - 1].insertAdjacentHTML('beforeend', createDefultOpt);
-        cln.getElementsByTagName('label')[0].innerHTML = ''; // clear text of label
+        }else{
+            let FormDIV = document.getElementById('filterForm'); // clone div filter dropdown
+            let cln = FormDIV.cloneNode(true); //set id in filterform
+            cln.id = "form" + IDform;
+            let selectElem = cln.getElementsByTagName('select');
+            selectElem[selectElem.length - 1].innerHTML = '';
+            let div_elem = cln.getElementsByTagName('div');
+            let createDefultOpt = `<option selected disabled value=''>-- Select --</option>`;
+            selectElem[selectElem.length - 1].insertAdjacentHTML('beforeend', createDefultOpt);
+            cln.getElementsByTagName('label')[0].innerHTML = ''; // clear text of label
 
-        for (let i = 0; i < selectElem.length; i++) {
-            selectElem[i].id = selectElem[i].id + IDform; /// add id of <select> <= value , branch
-            div_elem[i].id = div_elem[i].id + IDform; /// add id of <select> <= divvalue , divbranch
+            for (let i = 0; i < selectElem.length; i++) {
+                selectElem[i].id = selectElem[i].id + IDform; /// add id of <select> <= value , branch
+                div_elem[i].id = div_elem[i].id + IDform; /// add id of <select> <= divvalue , divbranch
+            }
+
+            let lastDiv = cln.getElementsByTagName('div');
+            lastDiv = lastDiv[lastDiv.length - 1];
+            let icon_remove = `<i class="fa fa-minus-circle minus-btn"
+                                id="addBtn" onclick = removeForm("form"+` + IDform + `);
+                                aria-hidden="true"></i>`;
+
+            lastDiv.insertAdjacentHTML('beforeend', icon_remove);
+            formSelect.appendChild(cln);
+            IDform += 1;
         }
+        stateClick += 1;
 
-        let lastDiv = cln.getElementsByTagName('div');
-        lastDiv = lastDiv[lastDiv.length - 1];
-        let icon_remove = `<i class="fa fa-minus-circle minus-btn"
-                            id="addBtn" onclick = removeForm("form"+` + IDform + `);
-                            aria-hidden="true"></i>`;
-
-        lastDiv.insertAdjacentHTML('beforeend', icon_remove);
-        formSelect.appendChild(cln);
-        IDform += 1;
     }
-
 
     function checkState() {
 
-        if (getSelectBranch.value !== '' && getSelectValue.value !== '' && formbusiness.value !== '') {
+        if (formbusiness.value !== '') {
             document.getElementById('buttonShow').disabled = false;
         } else {
             document.getElementById('buttonShow').disabled = true;
         }
     }
 
+    function getValueList(value, id) {
+
+        let getValueIdElem = document.getElementById('values' + id.slice(6));
+
+        for (let i in branch_list) {
+            if (i.toLowerCase() === value.toLowerCase()) {
+                getValueIdElem.innerHTML = '';
+                let key = branch_list[i];
+                let createDefultOpt = `<option selected disabled value=''>-- Select --</option>`;
+                getValueIdElem.insertAdjacentHTML('beforeend', createDefultOpt);
+                view.createFormList(key, key, getValueIdElem);
+            }
+        }
+    }
 
     function removeForm(id) {
+
+        
+        // document.getElementById(id).innerHTML = '';
+        // if(id === 'filterForm'){
+        //     stateClick = 0;
+        // }
         let parentFilter = document.getElementById('formSelect');
         parentFilter.removeChild(document.getElementById(id));
     }
 
     function scrollToTop() {
 
-
         $("html,body").animate({
             scrollTop: $("html,body").offset().top
         }, "1000");
     }
 
+
     function createall(data, callback) {
 
         let containerQuestion = document.getElementById('question-all');
-        while (containerQuestion.hasChildNodes()) {
-            containerQuestion.removeChild(containerQuestion.lastChild);
-        }
+
+        //remove all node  
+        containerQuestion.innerHTML = '';
+        // while (containerQuestion.hasChildNodes()) {
+        //     containerQuestion.removeChild(containerQuestion.lastChild);
+        // }
 
         for (let i = 0; i < data.length; i++) {
             let creatediv = document.createElement('DIV');
             creatediv.className = 'row';
             creatediv.innerHTML = `
-                <div class="panel panel-default panel-body">
+                <div class="panel panel-default panel-body question">
                     <h3> ` + data[i].q_num + `. ` + data[i].question[0] + `</h3>
-                    <div class="col-md-8">
-                        <div id="container-1-q` + data[i].q_num + `"></div>
+                    <div class="col-md-8 graph2">
+                        <div id="container-1-q` + data[i].q_num + `" style="width:100%; min-width: 310px; margin: 0 auto"></div>
                     </div>
-                    <div class="col-md-4">
-                        <div id="container-2-q` + data[i].q_num + `"></div>
+                    <div class="col-md-4 graph3">
+                        <div id="container-2-q` + data[i].q_num + `" style="width:100%; min-width: 310px; margin: 0 auto"></div>
                     </div>
 
-                    <!--taboe-->
+                    <!--table-->
                     <div class="col-md-12 table-style" >
-                        <table style="width:100%" class="margin-top-5">
+                        <table style="width:100%" class="margin-top-5" id = "table` + i + `">
                             <thead>
                                 <tr>
                                     <td rowspan="2"></td>
