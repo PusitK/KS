@@ -14,7 +14,8 @@ function dropdownLogOut() {
 }
 // Close the dropdown menu if the user clicks outside of it
 window.onclick = function (event) {
-    if (!event.target.matches('.dropbtn')) {
+    var matches = event.target.matches ? event.target.matches('.dropbtn') : event.target.msMatchesSelector('.dropbtn');
+    if (!matches) {
         var dropdowns = document.getElementsByClassName("dropdown-content");
 
         for (var i = 0; i < dropdowns.length; i++) {
@@ -278,7 +279,7 @@ var model = {
             data: JSON.stringify(param_with_filter),
             success: function success(response) {
                 if (response.data[0].que_sum_score == 0) {
-                    view.display('hide');   
+                    view.display('hide');
                     document.getElementById('showForm').style.display = 'block';
                     document.getElementById('blackdrop').style.display = 'none';
                 } else {
@@ -373,8 +374,6 @@ var model = {
                         });
                     });
                 }
-
-                
             },
             error: function error(xhr, textStatus, errorThrown) {
                 // model.refreshToken('click');
@@ -407,7 +406,7 @@ var view = {
             if (isNaN(per_com_false)) per_com_false = 0;
             var per_iden_true = (countFilter[0].is_identified.true / total * 100).toFixed(2) || 0;
             if (isNaN(per_iden_true)) per_iden_true = 0;
-            var per_iden_false = (countFilter[0].is_identified.false / total * 100).toFixed(2) || 0;  
+            var per_iden_false = (countFilter[0].is_identified.false / total * 100).toFixed(2) || 0;
             if (isNaN(per_iden_false)) per_iden_false = 0;
 
             if (i === 1) {
@@ -419,7 +418,7 @@ var view = {
             } else if (i === 4) {
                 elemnumber.innerText = countFilter[0].is_identified.true + " form(s) \u2014 " + per_iden_true + "%";
             } else {
-                elemnumber.innerText = countFilter[0].is_identified.false + " form(s) \u2014 " + per_iden_true + "%";
+                elemnumber.innerText = countFilter[0].is_identified.false + " form(s) \u2014 " + per_iden_false + "%";
             }
         }
     },
