@@ -26,12 +26,16 @@
     let sum_gender_line = [];
     var start = moment().startOf('day');
     var end = moment().endOf('day');
+    let getUtcOffset = moment().format('Z');
+    let idxtimezone = getUtcOffset.indexOf(':');
+    let timezone = getUtcOffset.slice(0, idxtimezone);
 
     let arr_filter_select = [];
     let tag = {};
     
     let print_data = {};
     var model = {
+        getElement :  function( id ) { return document.getElementById( id )},
 
         redirect: function(){
             window.location = "http://survey-report.dev.triple3.io";
@@ -41,6 +45,8 @@
             $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
             startdate = start.unix() * 1000;
             enddate = end.unix() * 1000;
+           
+
             return startdate, enddate;
         },
         refreshToken: function (com, iden) {
@@ -73,7 +79,9 @@
         },
 
         onloadFetch: function () {
-            document.getElementById('blackdrop').style.display = 'block';
+            
+            model.getElement('blackdrop').style.display = 'block';
+            // document.getElementById('blackdrop').style.display = 'block';
             $.ajax({
                 url: "https://a0n3yz3jbj.execute-api.ap-southeast-1.amazonaws.com/prod/v2/selector/form?business=" + localStorage.business,
                 type: "GET",
@@ -198,7 +206,7 @@
                 success: function (response) {
 
                     if (response.data[0].que_sum_score == 0) {
-
+                        console.log('blockj');
                         view.display('hide');
                         document.getElementById('showForm').style.display = 'block';
                         document.getElementById('blackdrop').style.display = 'none';
@@ -365,18 +373,15 @@
         },
         display: function (atb) {
             if (atb == 'show') {
-                // document.getElementById('display-section').style.display = 'block';
-                $('#display-section').attr("style", "display: block !important;");
+                document.getElementById('display-section').className = 'display-show'; // add class
                 document.getElementById('display-section-af-search').style.display = 'block';
                 document.getElementById('error-display').style.display = 'none';
             } else if (atb === 'hide') {
-                // document.getElementById('display-section').style.display = 'none';
-                $('#display-section').attr("style", "display: none !important;");
+                document.getElementById('display-section').className = 'display-hide';
                 document.getElementById('error-display').style.display = 'block';
                 document.getElementById('error-text').innerText = 'No Data';
             } else if (atb === 'clear') {
-                // document.getElementById('display-section').style.display = 'none';
-                $('#display-section').attr("style", "display: none !important;");
+                document.getElementById('display-section').className = 'display-hide';
                 document.getElementById('error-display').style.display = 'none';
                 document.getElementById('display-section-af-search').style.display = 'none';
             }
@@ -541,6 +546,7 @@
                     "tags" : tag,
                     "is_completed": com,
                     "is_identified": iden,
+                    "timezone" : timezone,
                     "email":document.getElementById('email').value
                 }),
                 success: function (response) {
@@ -711,7 +717,8 @@
                 yAxis: {
                     title: {
                         text: 'Score'
-                    }
+                    },
+                    min:0
                 },
                 xAxis: {
                     labels: {
@@ -759,12 +766,12 @@
 
         if(start_only_date !== end_only_date){
 
-            chartOption.yAxis = {max : 5};
+            chartOption.yAxis = {max : 5,min:0};
             Highcharts.chart(chartname, chartOption);
         }else{
             
             chartOption.chart = {type : 'column'};
-            chartOption.yAxis = {max : 5};
+            chartOption.yAxis = {max : 5,min:0};
             Highcharts.chart(chartname, chartOption);
         }
     }
@@ -1203,7 +1210,6 @@
                 }]
             });
         }
-
     }
 
     function redraw(chart, data) {
@@ -1357,10 +1363,10 @@
 
                 max5_sum_score += 5;
                 max5_count = max5_count + data[i].que_sum_score / (data[i].doc_count * 5) * 5;
-                if(Math.floor(max5) == 5){
+                if(max5 >= 4.5){
                     max5_color = '#004384 !important';
                     max5_image = '<img src="img/point5.svg" class="emotion-progress"/>';
-                }else if(Math.floor(max5) == 4){
+                }else if(max5 >= 4 && max5 < 4.5){
                     max5_color = '#96cfea !important';
                     max5_image = '<img src="img/point4.svg" class="emotion-progress"/>';
                 }else if(Math.floor(max5) == 3){
@@ -1387,10 +1393,10 @@
             prog_elem.insertAdjacentHTML('beforeend', progress_element);
         }
         let sum_max5 = (max5_count / max5_sum_score * 5).toFixed(2);
-        if(Math.floor(sum_max5) == 5){
+        if(sum_max5 >= 4.5){
             max5_color = '#004384 !important';
             max5_image = '<img src="img/point5.svg" class="emotion-progress"/>';
-        }else if(Math.floor(sum_max5) == 4){
+        }else if(sum_max5 >= 4 && sum_max5 < 4.5){
             max5_color = '#96cfea !important';
             max5_image = '<img src="img/point4.svg" class="emotion-progress"/>';
         }else if(Math.floor(sum_max5) == 3){

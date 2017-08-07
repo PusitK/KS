@@ -6,7 +6,7 @@ if(/[?&]file=/.test(location.search)){
     var filename = url.searchParams.get("file");
     window.onload = function (event) {
         $.ajax({
-            url: "https://qwmpk1nu5e.execute-api.ap-southeast-1.amazonaws.com/dev/v2/download",
+            url: "https://a0n3yz3jbj.execute-api.ap-southeast-1.amazonaws.com/prod/v2/download",
             type: "POST",
             dataType: 'json',
             headers: {
